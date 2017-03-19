@@ -1,0 +1,51 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 25
+    buildToolsVersion "25.0.2"
+    defaultConfig {
+        applicationId "com.landenlabs.all_log"
+        minSdkVersion 15
+        targetSdkVersion 25
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    }
+    buildTypes {
+        debug {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            applicationVariants.all { variant ->
+                 appendVersionNameVersionCode(variant, defaultConfig)
+            }
+        }
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            applicationVariants.all { variant ->
+                 appendVersionNameVersionCode(variant, defaultConfig)
+            }
+        }
+    }
+    lintOptions {
+        abortOnError false
+        disable 'DefaultLocale', 'SimpleDateFormat', 'InflateParams', 'SpUsage',
+                'UseCompoundDrawables', 'HandlerLeak', 'ViewConstructor', 'SetTextI18n',
+                'RtlSymmetry', 'RtlHardcoded', 'ContentDescription',
+                'MissingTranslation', 'ValidFragment', 'UnusedAttribute'
+    }
+}
+
+dependencies {
+    compile fileTree(include: ['*.jar'], dir: 'libs')
+    compile 'com.android.support:appcompat-v7:25.1.0'
+    // compile 'com.android.support.constraint:constraint-layout:1.0.0-beta4'
+}
+
+def appendVersionNameVersionCode(variant, defaultConfig) {
+    variant.outputs.each { output ->
+        def file = output.packageApplication.outputFile
+        def fileName = file.name.replaceAll(".*(debug|release).apk", "all_Log_Demo_\$1-v" + defaultConfig.versionCode + ".apk")
+        output.packageApplication.outputFile = new File(file.parent, fileName)
+    }
+}

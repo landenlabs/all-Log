@@ -1,0 +1,419 @@
+<!DOCTYPE HTML>
+<html lang="en">
+
+<head>
+  <meta name="keywords" content="Android,Developer,Log">
+  <meta name="description" content="Android Log Helper">
+  <meta name="author" content="Dennis Lang">
+
+  <title>Android - ALog - Dennis Lang</title>
+
+  <link rel="icon" type="../image/ico" href="/favicon.ico" >
+  <link rel="shortcut icon" href="/favicon.ico" >
+
+  <meta charset="utf-8"> 
+  <META http-equiv="Content-Style-Type" content="text/css" />
+
+
+  <!-- Google analytics tracking -->
+  <script type="text/javascript" src="/scripts.js"></script>
+
+</head>
+
+<style>
+	body {
+		background-image: url("bg.jpg");
+		border: 10px solid #e0e0e0;
+		padding: 10px 10px 10px 10px;
+	}
+	
+	table {
+		border-collapse: collapse;
+	}
+	table, td, th {
+		border: 1px solid black;
+	}
+	th {
+		background-color: #ffd0d0;
+	}
+	
+	pre {
+		background-color: #c0c0c0;
+		padding: 10px;
+		border: 1px solid black;
+	}
+</style>
+                      
+<BODY>
+<a name="top"></a>
+    
+<h2 id="androidalogv11">Android ALog v1.1</h2>
+
+<p>
+apk v1.1  available in dist director to demonstrate and test ALog
+    
+<p>
+See GitHub: <a href="https://github.com/landenlabs2/all_Log">https://github.com/landenlabs2/all_Log</a>
+
+<p>
+<img src="http://landenlabs.com//android/alog/alog.png" alt="ALog" />
+
+<a name="intro"></a>
+<p>
+ALog is an Android Log wrapper which has the following features:
+
+
+<ol>
+  <li>Small - Four small classes, only one required.
+  <li>Light weight - No explict memory allocations. 
+  <li>Performant - No processing beyond if-test when logging disabled or 
+  log level below min level.  Message presentation (formatting or concatenation) 
+  only occur if logging is required. 
+  <li>Chainable - Calls are chainable making it easier to extend parameter processing. 
+  <li>ThreadSafe - Logs can be generated in concurrent threads.
+</ol>
+
+<hr>
+<a name="contents"></a>
+Contents
+<ul>
+<li><a href="#overview">Overview</a>
+<li><a href="#alog">ALog</a>
+<li><a href="#applog">AppLog</a>
+<li><a href="#install">Install</a>
+<li><a href="#build">Builld</a>
+<li><a href="#use">Use</a>
+<li><a href="#license">License</a>
+<li><a href="#website">WebSite</a>
+                                    
+</ul>
+<p>
+    
+<hr>
+<a name="overview"></a>
+Overview
+
+<p>
+The core class ALog is an enumeration. Using an enueration restricts memory allocation
+of the class to startup and subsequent use is light-weight singleton.
+
+<p>
+Core class or enum files:
+
+<ul>
+<li>ALog  - enumerated log level priorities and format controls.
+<li>ALogOut - Output target abstraction to support alternate targets such as private file.
+<li>ALogFileWriter - Implementation of private output file target.
+</ul>
+
+<p>
+Optional Extended abstraction enum file:
+
+<ul>
+<li>AppLog - Enumeration to manage <b>named</b> logging instances which can have different targets.
+</ul>
+
+<p>
+Change your code from old style:
+<pre><code class="java">
+// Determine debug state once in main activity.
+// Use flag in code to determine if logging is active. 
+boolean showOldLog = ((getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0);
+
+
+// Places in code where logging is required.
+final String TAG = getClass().getSimpleName();
+if (showOldLog) {
+    Log.d(TAG, "old style log message #1");
+}
+// ... do more stuff ...
+if (showOldLog) {
+    Log.d(TAG, "old style log message #2");
+}
+</code></pre>
+To new style:
+<pre><code class="java">
+// Determine debug state once in main activity.
+// Use flag in code to determine if logging is active. 
+boolean showNewLog = ((getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0);
+AppLog.setMinLevel(showNewLog ? VERBOSE : NOLOGGING);
+
+
+// Places in code where logging is required.
+AppLog.LOG.d().msg("new style log message #1");
+// ... do more stuff
+AppLog.LOG.d().msg("new style log message #2");
+</code></pre>
+<p>
+<a href="#contents">[Top]</a>
+<p>
+    
+<hr>
+<a name="alog"></a>
+ALog
+
+<p>
+ALog is the main log wrapper class which supports the standard priority levels:
+
+<ul>
+<li>(2) Verbose
+<li>(3) Debug
+<li>(4) Info
+<li>(5) Warning
+<li>(6) Error
+<li>(7) Assert
+</ul>
+
+<pre><code class="java language-java">
+public enum ALog {
+
+    // Log levels to system log file.
+    v(ALog.VERBOSE),
+    d(ALog.DEBUG),
+    i(ALog.INFO),
+    w(ALog.WARN),
+    e(ALog.ERROR),
+    a(ALog.ASSERT),
+    none(ALog.ASSERT+1),
+
+    . . . 
+</code></pre>
+
+<p>
+ALog enumeration includes chainable methods to configure output.
+
+<p>
+Example Syntax of ALog
+<p>
+<table>
+<tr><th>Call<th>Logged message
+<tr><td>ALog.i.self().msg("#log info message");  <td> /I (MainActivity.java:211)(pid):#log info message
+<tr><td>ALog.d.tag("myTag1").msg("#log debug message");  <td> D/myTag1 (pid):#log debug message
+<tr><td>ALog.w.tagMsg("myTag2", "#log warning message"); <td> W/myTag2 (pid):#log warning message
+<tr><td>ALog.e.tag("classTag").fmt("#error FIRST:%s LAST:%s", "first", "last"); <td> E/classTag (pid):#error FIRST:first LAST:last
+<tr><td>ALog.i.tag("catTag").cat(" ", "Info", "Log", "a", "new", "msg"); <td> I/catTag (pid):info Log a new msg
+</table>
+
+<p>To control logging, set the static global minLevel in ALog. 
+
+<pre><code class="java language-java">File: ALog.java:
+
+    /**
+     * Minimum level to log.
+     */
+    public static int minLevel = ALog.VERBOSE;
+</code></pre>
+
+<p>The logging is <b>active</b> if the calling log level exceeds or is equal to the priority of the minimum global log level.
+
+<pre><code class="java language-java">    ALog.minLevel = ALog.WARN;
+    ALog.d.msg("this log is ignored, below min level");
+    ALog.w.msg("this log is sent");
+    ALog.e.msg("this log is also sent");
+</code></pre>
+
+<p>The ALog enumeration supports chaining of methods to customize the logging output. 
+The <b>tag</b> and <b>self</b> method set the Tag field which persists between calls within a thread. 
+
+<p>
+<table>
+<tr bgcolor="#c0c0c0"><th>Method <th> Description
+<tr><td>tag(String tagStr) <td> Set output tag field, default is 'self()'. Setting persists between calls.
+<tr><td>self()      <td> Set output tag to self which parses the call stack and generates a tag value of syntax filename:lineNumber
+</table>
+
+<p>The key advantage of ALog is the <b>cat</b> and <b>fmt</b>
+methods do <b>no</b> processing unless the log is active. 
+This avoids wasting time and memory formating strings only to be discarded.
+
+<p>The following methods cause an immediate printing of the log message if logging is active. 
+
+<p>
+<table>
+<tr bgcolor="#c0c0c0"><th>Method <th> Description
+<tr><td>msg(String msgStr) <td> Print msgStr using current tag to log target
+<tr><td>msg(String msgStr, Throwable tr) <td> Print msgStr using current tag to log target along with Throwable stack trace
+<tr><td>tagMsg(String tagStr, String msgStr) <td> Print tag  and message
+<tr><td>cat(String separator, Object... args) <td> Print concatenaated objects
+<tr><td>fmt(String fmt, Object... args) <td> Print formatted objects
+</table>
+
+<p>Example when Tag set once in a thread and multiple logs generate without setting tag:
+
+<p>
+<table>
+<tr bgcolor="#c0c0c0"><th>Call <th> Logged message
+<tr><td>ALog.w.tag("tag3"); <td>
+<tr><td>ALog.w.msg("with tag3, msg#1"); <td> W/tag3 (pid):msg#1
+<tr><td>w.msg("with tag3, msg#2"); <td> W/tag3 (pid):msg#2
+</table>
+
+<p>Using following syntax to log an exception:
+
+<pre><code class="java language-java">Exception ex = new Exception("test exception");
+ALog.e.tr(ex);
+</code></pre>
+<p>
+<a href="#contents">[Top]</a>
+<p>
+
+
+<hr>
+<a name="applog"></a>
+AppLog
+
+<p>This implementation futher extends the logging by wrapping ALog in another 
+enumeration called <b>AppLog</b>.  The AppLog enumeration is used to create and manage named loggers
+which can be used by common code or actions such as Network access, Parsing XML, Fragments, etc.
+The AppLog enumeration futher extends the logging flavors by supporting alternate
+logging destinations, such as a private log file or No Logging. By configuring these named
+loggers you can control which features in your code are actively logging and where they log.
+
+<pre><code class="java language-java">public enum AppLog {
+
+    /**
+     * Logging to android log system.
+     */
+    LOG(LogSys),
+
+    /**
+     * Logging to private log file.
+     */
+    LOGFILE(LogFile),
+
+    // =========== Application specific log flavors ===========
+
+    /**
+     * General Fragment logging
+     */
+    LOG_FRAG(LogSys),
+
+    /**
+     * General Network activity (currently disabled).
+     */
+    LOG_NETWORK(LogNone),
+
+    /**
+     * General Parinsg activity (currently disabled).
+     */
+    LOG_PARSING(LogNone),
+</code></pre>
+
+<p>Example of using higher level Application level wrapper which provides flavors of logging which gives
+an added level of abstraction to setup default behavior.
+
+<pre><code class="java language-java">AppLog.LOG.i().tag("TestTag").msg("Log fixed test");
+AppLog.LOG_FRAG.i().self().msg("Frag fixed test");
+AppLog.LOGFILE.e().tag("LogFile").msg("LogFile fixed Test");
+</code></pre>
+<p>
+<a href="#contents">[Top]</a>
+<p>
+   
+<hr>
+<a name="install"></a>
+Install
+
+<p>Since ALog is just an enumeration pluas two support files you just need to include these files in your project. 
+
+<p>To use the full implemenation copy all four files from the alog subdirectory into your project and tune
+the AppLog enumeration to your needs. 
+
+<p>The private log fie target <b>ALogFileWriter</b> requires initialization to create the file. Call
+init(Context) on this class in your startup code.
+
+<pre><code class="java language-java">    @Override
+protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.activity_main);
+
+    // Initialize ALog private log file target.
+    ALogFileWriter.init(this);
+</code></pre>
+<p>
+<a href="#contents">[Top]</a>
+<p>
+    
+<hr>
+<a name="build"></a>
+Build
+
+<p>No special building is required.  Just include the files in your Android project.
+
+<p>Core class files:
+
+<ul>
+<li>ALog  - enumerated log level priorities and format controls.
+
+<li>ALogOut - Output target abstraction to support alternate targets such as private file.
+
+<li>ALogFileWriter - Implementation of private output file target.
+</ul>
+
+<p>Optional Extended abstraction class file:
+
+<ul>
+<li>AppLog - Enumeration to manage <b>named</b> logging instances which can have different targets.
+</ul>
+<p>
+<a href="#contents">[Top]</a>
+<p>
+    
+<hr>
+<a name="use"></a>
+Use 
+
+<p>See above API samples, JavaDoc, Code and Demo app for examples of usage. 
+<p>
+<a href="#contents">[Top]</a>
+<p>
+    
+<hr>
+<a name="license"></a>
+License
+
+<pre><code class="java language-java">/*
+ *  Copyright (c) 2017 Dennis Lang (LanDen Labs) landenlabs@gmail.com
+ *
+ *  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ *  associated documentation files (the "Software"), to deal in the Software without restriction, including
+ *  without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *  copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the
+ *  following conditions:
+ *
+ *  The above copyright notice and this permission notice shall be included in all copies or substantial
+ *  portions of the Software.
+ *
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
+ *  LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ *  NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ *  WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ *  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ *  @author Dennis Lang  (Jan-2017)
+ *  @see http://landenlabs.com
+ *
+ */
+</code></pre>
+<p>
+<a href="#contents">[Top]</a>
+<p>
+    
+<hr>
+<a name="website"></a>
+WebSite
+
+<p>Code is provided, documentation and examples provided at these locations:
+
+<ul>
+<li><a href="https://github.com/landenlabs2/all_Log">https://github.com/landenlabs2/all_Log</a>
+<li><a href="http://www.landenlabs.com/android">http://www.landenlabs.com/android</a>
+</ul>
+    
+<p>
+<a href="#contents">[Top]</a>
+<p> 
+
+
+</body>
+</html>

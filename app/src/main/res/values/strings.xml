@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">all Log</string>
+    <string name="action_settings">Settings</string>
+    <string name="section_format">Tet ALog section: %1$d</string>
+
+    <string-array name="log_choices">
+        <item>2 Verbose</item>
+        <item>3 Debug</item>
+        <item>4 Info</item>
+        <item>5 Warning</item>
+        <item>6 Error</item>
+        <item>7 Assert</item>
+    </string-array>
+
+</resources>
