@@ -117,7 +117,7 @@ public enum ALog {
 
 ALog enumeration includes chainable methods to configure output.
 
-Example Syntax of ALog
+Example Syntax of ALog (see full list below)
 
 Call | Logged message
 -----| --------------
@@ -156,19 +156,60 @@ tag(String tagStr) | Set output tag field, default is 'self()'. Setting persists
 self()      | Set output tag to self which parses the call stack and generates a tag value of syntax filename:lineNumber
 
 
-The key advantage of ALog is the <b>cat</b> and <b>fmt</b>
+The key advantage of ALog is the <b>cat</b>, <b>join</b>, <b>fmt</b> and <b>tr</b>
 methods do <b>no</b> processing unless the log is active. 
-This avoids wasting time and memory formating strings only to be discarded.
+This avoids wasting time and memory formatting strings only to be discarded.
 
-The following methods cause an immediate printing of the log message if logging is active. 
+It is very important to understand the caller must use the most efficient API to avoid wasting cpu and memory
+on calls which will often be discarded when running in Release build.
+
+BAD usage:
+```java
+    ALog.d.msg("URL" + netInfo.url + " Host:" + netInfo.host);
+```
+
+GOOD usage:
+```java
+    // Top of class define log TAG value.
+    static final String TAG = this.getClass().getSimpleName();
+
+    ...
+    ALog.d.tagJoin(TAG, "URL", netInfo.url, " Host:", netInfo.host);
+```
+
+
+Methods are chainable if you need multiple presentation syntax. Most common usage is to include
+an Exception stack trace with your message.
+
+```java
+
+   // Chain Tr with another log action
+   ALog.e.tagTr(TAG, ex).tagCat(TAG, "Failed to connect to ", netInfo.url);
+```
+
+
+The following methods cause an immediate printing of the log message if logging is active.
+The first group is the more efficient because caller provides the TAG.
 
 Method | Description
 ------ | -----------
-msg(String msgStr) | Print msgStr using current tag to log target
-msg(String msgStr, Throwable tr) | Print msgStr using current tag to log target along with Throwable stack trace
-tagMsg(String tagStr, String msgStr) | Print tag  and message
-cat(String separator, Object... args) | Print concatenaated objects
+tagMsg(String tagStr, String msgStr) | Print message
+tagMsg(String tagStr, String msgStr, Throwable tr) | Print message to log target along with Throwable stack trace
+tagCat(String tagStr, String separator, Object... args) | Print concatenated objects with separator
+tagJoin(String tagStr, Object... args) | Print joined objects
+tagFmt(String tagStr, String fmt, Object... args) | Print formatted objects
+tagTr(String tagStr,  Throwable tr) | Print Throwable stack trace
+
+This second API group is slower because it generates the TAG from the call stack.
+
+Method | Description
+------ | -----------
+msg(String msgStr) | Print message to log target
+msg(String msgStr, Throwable tr) | Print message to log target along with Throwable stack trace
+cat(String separator, Object... args) | Print concatenated objects with separator
+join(Object... args) | Print joined objects
 fmt(String fmt, Object... args) | Print formatted objects
+tr(Throwable tr) | Print Throwable stack trace
 
 Example when Tag set once in a thread and multiple logs generate without setting tag:
 
@@ -178,11 +219,17 @@ ALog.w.tag("tag3"); |
 ALog.w.msg("with tag3, msg#1"); | W/tag3 (pid):msg#1
 w.msg("with tag3, msg#2"); | W/tag3 (pid):msg#2
 
-Using following syntax to log an exception:
+Using following syntax to log an exception (which includes stack trace):
 
 ```java
-Exception ex = new Exception("test exception");
-ALog.e.tr(ex);
+    Exception ex = new Exception("test exception");
+    ALog.e.tr(ex);
+
+    // or better provide a TAG
+    ALog.e.tagTr(TAG, ex);
+
+    // or chain Tr with another log action
+    ALog.e.tagTr(TAG, ex).tagCat(TAG, "Failed to connect to ", netInfo.url);
 ```
 
 [To Top](#table)

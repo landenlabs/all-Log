@@ -232,13 +232,26 @@
                     android:id="@+id/catRb"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="cat(&quot;-&quot;, &quot;cat&quot;, &quot;first&quot;, &quot;last&quot;)" />
+                    android:text="cat(&quot;-&quot;, &quot;first&quot;, 123.f, this, &quot;last&quot;)" />
+
+                <RadioButton
+                    android:id="@+id/joinRb"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="join(&quot;&lt;cat&quot;, &quot; in &quot;, &quot;hat&gt;&quot;, Exception)" />
 
                 <RadioButton
                     android:id="@+id/fmtRb"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="fmt(&quot;First %s Last %s&quot;, item.first, item.last)" />
+
+                <RadioButton
+                    android:id="@+id/throwRb"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="tr(Exception).msg(&quot;--our msg--&quot;)" />
+
             </RadioGroup>
 
 

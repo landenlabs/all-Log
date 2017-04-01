@@ -46,7 +46,9 @@ import java.util.concurrent.CountDownLatch;
 
 import static com.landenlabs.all_log.MainActivity.LogTypes.logCat;
 import static com.landenlabs.all_log.MainActivity.LogTypes.logFmt;
+import static com.landenlabs.all_log.MainActivity.LogTypes.logJoin;
 import static com.landenlabs.all_log.MainActivity.LogTypes.logMsg;
+import static com.landenlabs.all_log.MainActivity.LogTypes.logThrow;
 import static com.landenlabs.all_log.alog.ALog.NOLOGGING;
 import static com.landenlabs.all_log.alog.ALog.VERBOSE;
 import static com.landenlabs.all_log.alog.ALog.w;
@@ -85,7 +87,7 @@ public class MainActivity extends Activity
     private UncaughtExceptionHandler uncaughtExceptionHandler = new UncaughtExceptionHandler();
 
 
-    enum LogTypes {logMsg, logCat, logFmt};
+    enum LogTypes {logMsg, logCat, logJoin, logFmt, logThrow};
     private LogTypes mType = logMsg;
     private AppLog mAppLog = AppLog.LOG;
     private boolean mFileLog = false;
@@ -176,10 +178,12 @@ public class MainActivity extends Activity
         findViewById(R.id.logfileRb).setOnClickListener(this);
         findViewById(R.id.lognetworkRb).setOnClickListener(this);
 
-        // Log parmameter handling and prensetation.
+        // Log parameter handling and presentation.
         findViewById(R.id.msgRb).setOnClickListener(this);
         findViewById(R.id.catRb).setOnClickListener(this);
+        findViewById(R.id.joinRb).setOnClickListener(this);
         findViewById(R.id.fmtRb).setOnClickListener(this);
+        findViewById(R.id.throwRb).setOnClickListener(this);
 
         // Action buttons and log status
         mLogCatTv = (TextView) findViewById(R.id.logcatTv);
@@ -312,8 +316,14 @@ public class MainActivity extends Activity
             case R.id.catRb:
                 mType = logCat;
                 break;
+            case R.id.joinRb:
+                mType = logJoin;
+                break;
             case R.id.fmtRb:
                 mType = logFmt;
+                break;
+            case R.id.throwRb:
+                mType = logThrow;
                 break;
         }
     }
@@ -382,10 +392,16 @@ public class MainActivity extends Activity
                     getLogLevel(level).msg("msg");
                     break;
                 case logCat:
-                    getLogLevel(level).cat("-", "cat", "first", "last");
+                    getLogLevel(level).cat("-", "first", 123.4f, this, "last");
+                    break;
+                case logJoin:
+                    getLogLevel(level).tagJoin("ALOG", "<cat", " in ", "hat>", new NullPointerException("help"));
                     break;
                 case logFmt:
                     getLogLevel(level).fmt("fmt First %s Last %s", "John", "Doe");
+                    break;
+                case logThrow:
+                    getLogLevel(level).tr(new NullPointerException("help")).msg("--our msg--");
                     break;
             }
         } catch (Exception ex) {
