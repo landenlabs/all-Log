@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2017 Dennis Lang (LanDen Labs) landenlabs@gmail.com
+ *  Copyright (c) 2019 Dennis Lang(LanDen Labs) landenlabs@gmail.com
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
  *  associated documentation files (the "Software"), to deal in the Software without restriction, including
@@ -27,7 +27,6 @@ import android.app.Activity;
 import android.content.pm.ApplicationInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.v4.os.AsyncTaskCompat;
 import android.util.Log;
 import android.view.View;
 import android.widget.CheckBox;
@@ -61,6 +60,7 @@ import static com.landenlabs.all_log.alog.ALogFileWriter.Default;
  *
  * @author Dennis Lang
  */
+@SuppressWarnings({"FieldCanBeLocal", "unused"})
 public class MainActivity extends Activity
         implements View.OnClickListener {
 
@@ -87,7 +87,7 @@ public class MainActivity extends Activity
     private UncaughtExceptionHandler uncaughtExceptionHandler = new UncaughtExceptionHandler();
 
 
-    enum LogTypes {logMsg, logCat, logJoin, logFmt, logThrow};
+    enum LogTypes {logMsg, logCat, logJoin, logFmt, logThrow}
     private LogTypes mType = logMsg;
     private AppLog mAppLog = AppLog.LOG;
     private boolean mFileLog = false;
@@ -148,8 +148,6 @@ public class MainActivity extends Activity
     Worker mWorkerThread2 = new Worker("Th#2");
 
 
-
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -157,20 +155,19 @@ public class MainActivity extends Activity
         ALogFileWriter.init(this);
 
 
-
         // ================= Setup User Interface ==================
         // Enable and levels.
-        mEnabledCb = (CheckBox) findViewById(R.id.enabledCb);
-        mMinLevelSp = (Spinner) findViewById(R.id.minlevelSp);
-        mLevelSp = (Spinner) findViewById(R.id.levelSp);
+        mEnabledCb = findViewById(R.id.enabledCb);
+        mMinLevelSp = findViewById(R.id.minlevelSp);
+        mLevelSp = findViewById(R.id.levelSp);
 
         // Tag handling
-        mTagSelfRb = ((RadioButton) findViewById(R.id.tag_selfRb));
+        mTagSelfRb = findViewById(R.id.tag_selfRb);
         mTagSelfRb.setOnClickListener(this);
-        mTagTextRb = ((RadioButton) findViewById(R.id.tag_textRb));
+        mTagTextRb = findViewById(R.id.tag_textRb);
         mTagTextRb.setOnClickListener(this);
-        mTagTextEt = (EditText) findViewById(R.id.tagtextEt);
-        mTagNoneRb = (RadioButton)findViewById(R.id.tag_noneRb);
+        mTagTextEt = findViewById(R.id.tagtextEt);
+        mTagNoneRb = findViewById(R.id.tag_noneRb);
         mTagNoneRb.setOnClickListener(this);
 
         // Log Target
@@ -186,12 +183,12 @@ public class MainActivity extends Activity
         findViewById(R.id.throwRb).setOnClickListener(this);
 
         // Action buttons and log status
-        mLogCatTv = (TextView) findViewById(R.id.logcatTv);
-        mLogCatSv = (ScrollView)findViewById(R.id.status_sv);
+        mLogCatTv = findViewById(R.id.logcatTv);
+        mLogCatSv = findViewById(R.id.status_sv);
 
-        mThreadUiCb = (CheckBox)findViewById(R.id.thread_ui_cb);
-        mThread1Cb = (CheckBox)findViewById(R.id.thread_1_cb);
-        mThread2Cb = (CheckBox)findViewById(R.id.thread_2_cb);
+        mThreadUiCb = findViewById(R.id.thread_ui_cb);
+        mThread1Cb = findViewById(R.id.thread_1_cb);
+        mThread2Cb = findViewById(R.id.thread_2_cb);
 
         findViewById(R.id.do_log_btn).setOnClickListener(this);
         findViewById(R.id.clear_btn).setOnClickListener(this);
@@ -202,12 +199,13 @@ public class MainActivity extends Activity
 
         LogUtil.clearLogCat();
         mAsyncLogCat = LogUtil.getAsyncLogCat(mLogCatTv, mLogCatSv);
-        AsyncTaskCompat.executeParallel(mAsyncLogCat);
+        mAsyncLogCat.execute();
 
         AppLog.LOGFILE.i().tag("TestFile").msg("Startup");
         mAsyncLogFile = LogUtil.getAsyncReadFile(Default.getFile(), mLogCatTv, mLogCatSv);
-        AsyncTaskCompat.executeParallel(mAsyncLogFile);
+        mAsyncLogFile.execute();
 
+        ((RadioButton)findViewById(R.id.logfileRb)).setChecked(true);
         fixedLogTest();
     }
 
@@ -338,7 +336,7 @@ public class MainActivity extends Activity
      */
     private void sendAndShowLog() {
         int minLevel = (int) mMinLevelSp.getSelectedItemId() + Log.VERBOSE;
-        mAppLog.setMinLevel(minLevel);
+        AppLog.setMinLevel(minLevel);
         final int level = (int) mLevelSp.getSelectedItemId() + Log.VERBOSE;
 
         threadSendLog(level);
@@ -358,8 +356,6 @@ public class MainActivity extends Activity
      * </pre>
      * Note:
      * CountDownLatches have to be recreated each time. (stupid java).
-     *
-     * @param level
      */
     private void threadSendLog(final int level) {
         gLevel = level;
@@ -375,7 +371,7 @@ public class MainActivity extends Activity
         }
 
         try {
-            Thread.currentThread().sleep(100);
+            Thread.sleep(100);
         } catch (Exception ex) {
             Log.e(TAG, ex.getMessage());
         }
@@ -395,14 +391,15 @@ public class MainActivity extends Activity
                     getLogLevel(level).cat("-", "first", 123.4f, this, "last");
                     break;
                 case logJoin:
-                    getLogLevel(level).tagJoin("ALOG", "<cat", " in ", "hat>", new NullPointerException("help"));
+                    getLogLevel(level).tagMsg("ALOG", "<cat", " in ", "hat>", new NullPointerException("help"));
                     break;
                 case logFmt:
                     getLogLevel(level).fmt("fmt First %s Last %s", "John", "Doe");
                     break;
                 case logThrow:
-                    getLogLevel(level).tr(new NullPointerException("help")).msg("--our msg--");
+                    getLogLevel(level).msg("--our msg--", new NullPointerException("help"));
                     break;
+
             }
         } catch (Exception ex) {
             Log.e(TAG, ex.getMessage());
@@ -413,7 +410,6 @@ public class MainActivity extends Activity
     /**
      * Get Application logger for desired level
      *
-     * @param level
      * @return Application logger for desired level
      */
     private ALog getLogLevel(int level) {

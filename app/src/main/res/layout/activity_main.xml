@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main_content"
     android:layout_width="match_parent"
@@ -226,7 +225,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:checked="true"
-                    android:text="Msg(&quot;hello&quot;)" />
+                    android:text="msg(&quot;hello&quot;)" />
 
                 <RadioButton
                     android:id="@+id/catRb"
@@ -238,7 +237,7 @@
                     android:id="@+id/joinRb"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="join(&quot;&lt;cat&quot;, &quot; in &quot;, &quot;hat&gt;&quot;, Exception)" />
+                    android:text="msg(&quot;&lt;cat&quot;, &quot; in &quot;, &quot;hat&gt;&quot;, Exception)" />
 
                 <RadioButton
                     android:id="@+id/fmtRb"
@@ -250,7 +249,7 @@
                     android:id="@+id/throwRb"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="tr(Exception).msg(&quot;--our msg--&quot;)" />
+                    android:text="msg(&quot;--our msg--&quot;, Exception)" />
 
             </RadioGroup>
 
@@ -332,6 +331,11 @@
             android:padding="5dp"
             android:text="Clear Log" />
 
+        <TextView
+            android:text="Monitor Log / LogFile"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
     </LinearLayout>
 
     <View
@@ -340,13 +344,13 @@
         android:background="@android:color/white" />
 
     <ScrollView
-        android:background="@drawable/paper_light_tile"
         android:id="@+id/status_sv"
         style="@style/scrollbar_shape_style"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_marginRight="10dp"
         android:layout_weight="1"
+        android:background="@drawable/paper_light_tile"
         android:visibility="gone">
 
         <TextView

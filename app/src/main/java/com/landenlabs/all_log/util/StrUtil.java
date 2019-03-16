@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2017 Dennis Lang (LanDen Labs) landenlabs@gmail.com
+ *  Copyright (c) 2019 Dennis Lang(LanDen Labs) landenlabs@gmail.com
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
  *  associated documentation files (the "Software"), to deal in the Software without restriction, including
@@ -45,7 +45,6 @@ public class StrUtil {
     /**
      * Colorize multi line data (alternating colors per line).
      *
-     * @param str
      * @return Alternate colorized lines.
      */
     public static SpannableString colorizeLines(String str) {
@@ -56,7 +55,7 @@ public class StrUtil {
 
         int idx = 0;
         int first = 0;
-        int last = 0;
+        int last;
 
         for (String line : lines) {
             last = first + line.length();
@@ -71,6 +70,4 @@ public class StrUtil {
 
         return spanStr;
     }
-
-
 }

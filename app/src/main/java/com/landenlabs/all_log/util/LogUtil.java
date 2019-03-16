@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2017 Dennis Lang (LanDen Labs) landenlabs@gmail.com
+ *  Copyright (c) 2019 Dennis Lang(LanDen Labs) landenlabs@gmail.com
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
  *  associated documentation files (the "Software"), to deal in the Software without restriction, including
@@ -66,14 +66,11 @@ public class LogUtil {
 
     /**
      * Get logcat output relevant for our logged messages.
-     *
-     * @param tag
-     * @return
      */
     public static String getLogCat(String tag) {
         StringBuilder logStr = new StringBuilder();
         try {
-            String line = "";
+            String line;
 
             // String logcmd = String.format("logcat -d -v brief -s \"java\",\"%s\"", tag);
             String logcmd = "logcat -d -v brief -t 4";
@@ -90,7 +87,7 @@ public class LogUtil {
                 }
             }
         } catch(IOException ex) {
-            // Log.e("foo", ex.getMessage());
+            Log.e("foo", ex.getMessage());
         }
 
         return logStr.toString();
@@ -98,9 +95,6 @@ public class LogUtil {
 
     /**
      * Get logged messages send to private log file.
-     *
-     * @param tag
-     * @return
      */
     public static String getLogFile(String tag) {
         StringBuilder logStr = new StringBuilder();
@@ -125,8 +119,6 @@ public class LogUtil {
      * Async Task which continuously reads LogCat output and updates TextView and advances scrollView.
      * Call must call execute() to start task.
      *
-     * @param textView
-     * @param scrollView
      * @return Created async task.
      */
     public static AsyncTask<Void, String, Void> getAsyncLogCat(
@@ -141,7 +133,7 @@ public class LogUtil {
                     BufferedReader bufferedReader = new BufferedReader(
                             new InputStreamReader(process.getInputStream()));
 
-                    String line = "";
+                    String line;
                     while ((line = bufferedReader.readLine()) != null) {
                         if (!line.startsWith("----") && line.trim().length() > 2) {
                             publishProgress(line);
@@ -174,8 +166,6 @@ public class LogUtil {
      * Call must call execute() to start task.
      *
      * @param file   File to read.
-     * @param textView
-     * @param scrollView
      * @return Created async task.
      */
     public static AsyncTask<Void, String, Void> getAsyncReadFile(final File file,

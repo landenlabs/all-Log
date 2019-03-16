@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2017 Dennis Lang (LanDen Labs) landenlabs@gmail.com
+ *  Copyright (c) 2019 Dennis Lang(LanDen Labs) landenlabs@gmail.com
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
  *  associated documentation files (the "Software"), to deal in the Software without restriction, including
@@ -24,7 +24,9 @@
 package com.landenlabs.all_log.alog;
 
 import android.content.Context;
-import android.util.Log;
+import android.os.Looper;
+import android.support.annotation.Nullable;
+import android.support.annotation.WorkerThread;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -33,36 +35,69 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.zip.GZIPOutputStream;
 
 /**
  * Custom Log output saves to a private log file
  *
- * Derived from work created by volker on 06.02.15.
- * @See https://raw.githubusercontent.com/volkerv/ALogFileWriter/master/ALogFileWriter.java
- *
  * @author Dennis Lang
  */
+@SuppressWarnings({"unused", "WeakerAccess"})
 public class ALogFileWriter implements ALogOut.LogPrinter {
     private static final String TAG = "ALogFileWriter";
     private static final String TIMESTAMP_FORMAT = "yyyy-MM-dd HH:mm:ss.SSS";
-    private static final String MSG_FORMAT = "%s/%c %s - %s";  // timestamp, level, tag, message
-    private static char[] LEVELS = { '0', '1', 'V','D', 'I', 'W', 'E', 'A' };
+    private static final char[] LEVELS = { '0', '1', 'V','D', 'I', 'W', 'E', 'A' };
+    private static SimpleDateFormat dateFmt;
 
-    private static String FILENAME = "filelog.txt";
-    private static long FILESIZELIMIT = 1024*10;
-    private static String mLogDir;
+    private String mMsgFmt = "%s/%c %s - %s";  // timestamp, level, tag, message
+    private final String mFilename = "filelog.txt";
+    private String mLogDir;
 
-    private String mLogFileName = FILENAME;
+    private String mLogFileName = mFilename;
     private long mFileSizeLimit;           // bytes
     private File mLogFile;
     private BufferedWriter mBufferedWriter;
+    private Thread mWriterThread;
 
-    public static ALogFileWriter Default = new ALogFileWriter();
+    public static final ALogFileWriter Default = new ALogFileWriter();
+    private static final ArrayBlockingQueue<String> mWriteQueue = new ArrayBlockingQueue<>(20);
 
-    public static void init(Context context) {
-        setDir(context.getCacheDir().getAbsolutePath());
-        Default.open(context);
+
+    @SuppressWarnings("UnusedReturnValue")
+    public static boolean init(Context context) {
+        boolean okay = true;
+        dateFmt = new SimpleDateFormat(TIMESTAMP_FORMAT, Locale.getDefault());
+
+        try {
+            Default.setDir(context.getFilesDir().getAbsolutePath() + "/logs");
+            Default.open(context);
+        } catch (Exception ex) {
+            okay = false;
+            ALog.e.tagMsg(TAG, ex);
+        }
+
+        return okay;
+    }
+
+    /**
+     *  Set row format for four fields:
+     *  <ul>
+     *  <li>Date Time string
+     *  <li>Severity character
+     *  <li>Tag string
+     *  <li>Message string
+     *  </ul>
+     *  Examples:
+     *  <ul>
+     *  <li>"%s/%c %s - %s"
+     *  <li>"%s,%c,%s,%s"
+     *  <li>%1$s,%4$s
+     *  </ul>
+     */
+    public void setFormat(String fmt) {
+        mMsgFmt = fmt;
     }
 
     /**
@@ -71,57 +106,52 @@ public class ALogFileWriter implements ALogOut.LogPrinter {
      *  <li>getCacheDir
      *  <li>getFilesDir()
      * </ul>
-     *
-     * @param logDir
      */
-    public  static void setDir(String logDir) {
+    public void setDir(String logDir) {
         mLogDir = logDir;
     }
 
     /**
      * Open default file with default file size.
      *
-     * @param context
+     * <pre>
+     * File stored in Download directory:
+     *     /storage/emulated/0/Download/package.name.filelog.txt
+     * Example:
+     *     /storage/emulated/0/Download/com.wsicarousel.android.weather.filelog.txt
+     * </pre>
      */
     @Override
     public void open(Context context) {
-        setDir(context.getCacheDir().getAbsolutePath());
-        open(FILENAME, FILESIZELIMIT);
+        // AndroidManifest sets up sharable directory for logs
+        // setDir(context.getFilesDir().getAbsolutePath() + "/logs");
+        final long FILE_SIZE_LIMIT = 1024 * 1024 * 10;
+        open(context.getPackageName() + "." + mFilename, FILE_SIZE_LIMIT);
     }
 
     /**
      * Open new log file with maximum file size.
      * When logging exceeds maximum size it will be archived and a new file opened.
      * Only one archived file kept.
-     *
-     * @param logFileName
-     * @param fileSizeLimit
      */
     public void open(String logFileName, long fileSizeLimit) {
         mFileSizeLimit = fileSizeLimit;
 
-/*
-        try {
-            mBufferedWriter = context.openFileOutput(logFilePath,  Context.MODE_APPEND | Context.MODE_WORLD_READABLE);
-        }
-        catch ( IOException e )
-        {
-            Log.e( TAG, Log.getStackTraceString( e ) );
-        }
-*/
+        File dir = new File(mLogDir);
+        //noinspection ResultOfMethodCallIgnored
+        makeDirs(dir);
 
         mLogFile = new File(mLogDir, logFileName);
         mLogFileName = mLogFile.getName();
-        mLogFile.setReadable(true, false);
-        mLogFile.setWritable(true, false);
+        setPermissions(mLogFile);
 
         if (!mLogFile.exists()) {
             try {
+                //noinspection ResultOfMethodCallIgnored
                 mLogFile.createNewFile();
-                mLogFile.setReadable(true, false);
-                mLogFile.setWritable(true, false);
-            } catch (IOException e) {
-                Log.e(TAG, Log.getStackTraceString(e));
+                setPermissions(mLogFile);
+            } catch (Exception ex) {
+                ALog.e.tagMsg(this, ex);
             }
         }
 
@@ -129,8 +159,8 @@ public class ALogFileWriter implements ALogOut.LogPrinter {
 
         try {
             mBufferedWriter = new BufferedWriter(new java.io.FileWriter(mLogFile, true));
-        } catch (IOException e) {
-            Log.e(TAG, Log.getStackTraceString(e));
+        } catch (IOException ex) {
+            ALog.e.tagMsg(this, ex);
         }
     }
 
@@ -139,10 +169,14 @@ public class ALogFileWriter implements ALogOut.LogPrinter {
             try {
                 mBufferedWriter.flush();
             } catch (IOException e) {
-                // Log.e(TAG, Log.getStackTraceString(e));
+                // ALog.e.tagMsg(this, Log.getStackTraceString(e));
             }
         }
         return mLogFile;
+    }
+
+    public boolean isOpen() {
+        return mBufferedWriter != null;
     }
 
     /**
@@ -155,9 +189,10 @@ public class ALogFileWriter implements ALogOut.LogPrinter {
                 mBufferedWriter.write('\n');
                 // mBufferedWriter.flush( );
                 mBufferedWriter.close();
+                mBufferedWriter = null;
             }
         } catch (IOException e) {
-            // Log.e(TAG, Log.getStackTraceString(e));
+            // ALog.e.tagMsg(this, Log.getStackTraceString(e));
         }
     }
 
@@ -167,9 +202,11 @@ public class ALogFileWriter implements ALogOut.LogPrinter {
     public void delete() {
         close();
         if (mLogFile != null) {
-            mLogFile.delete();
+            //noinspection ResultOfMethodCallIgnored
+            deleteFile(mLogFile);
         }
     }
+
 
     /**
      * Clear current logging by closing and deleting current file, then re-open file.
@@ -177,43 +214,89 @@ public class ALogFileWriter implements ALogOut.LogPrinter {
     public void clear() {
         close();
         if (mLogFile != null) {
-            boolean ok = mLogFile.delete();
+            //noinspection ResultOfMethodCallIgnored
+            deleteFile(mLogFile);
             open(mLogFileName, mFileSizeLimit);
         }
     }
 
     /**
      * Print log level, tag and message.
-     *
-     * @param level
-     * @param tag
-     * @param msg
      */
     @Override
     public  void println(int level, String tag, String msg) {
+        initWriterThread();
+        try {
+            mWriteQueue.add(formatMsg(level, tag, msg) + "\n");
+        } catch (IllegalStateException ignore) {
+            // Is full - ignore it
+        }
+    }
+
+    /**
+     * Start worker thread to complete file i/o.
+     */
+    private void initWriterThread() {
+        if (mWriterThread == null) {
+            mWriterThread = new Thread("ALogFileWriter") {
+                @Override
+                public void run() {
+                    try {
+                        Looper.prepare();
+                        while (!isInterrupted()) {
+                            String msg = mWriteQueue.take();
+                            if (msg != null) {
+                                writeln(msg);
+                            }
+                        }
+                    } catch (Exception ex) {
+                        ALog.e.tagMsg(this, "Writing log file ", ex);
+                    }
+                }
+            };
+            mWriterThread.start();
+        }
+    }
+
+    /**
+     * Wite log level, tag and message.
+     */
+    @WorkerThread
+    private  void writeln(String msg) {
         if (mBufferedWriter != null) {
-            synchronized (mBufferedWriter) {
+            synchronized (this) {
                 try {
                     if (checkFileSize()) {
+                        mBufferedWriter.close();
                         mBufferedWriter = new BufferedWriter(new java.io.FileWriter(mLogFile, true));
                     }
 
-                    mBufferedWriter.write(formatMsg(level, tag, msg));
-                    mBufferedWriter.newLine();
-                    mBufferedWriter.flush();            // TODO - avoid flushing
-                } catch (IOException e) {
-                    // Log.e(TAG, Log.getStackTraceString(e));
+                    mBufferedWriter.write(msg);
+                    mBufferedWriter.flush();
+                } catch (IOException ex) {
+                    ALog.e.tagMsg(this, ex);
                 }
             }
         }
 
         if (mBufferedWriter == null) {
-            Log.e(TAG, "You have to call ALogFileWriter.open(...) before starting to log");
+            ALog.e.tagMsg(this, "You have to call ALogFileWriter.open(...) before starting to log");
         }
     }
 
-    private static String formatMsg(int level, String tag, String msg) {
-        return String.format(MSG_FORMAT, getCurrentTimeStamp(), LEVELS[level&7], tag, msg);
+    @Override
+    public int maxTagLen() {
+        return MAX_TAG_LEN; // No real limit but 100 is a good value.
+    }
+
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    private void setPermissions(File file){
+        file.setReadable(true, true);
+        file.setWritable(true, true);
+    }
+
+    private String formatMsg(int level, String tag, String msg) {
+        return String.format(mMsgFmt, getCurrentTimeStamp(), LEVELS[level&7], tag, msg);
     }
 
     /**
@@ -223,11 +306,9 @@ public class ALogFileWriter implements ALogOut.LogPrinter {
         String currentTimeStamp = null;
 
         try {
-            SimpleDateFormat dateFormat = new SimpleDateFormat(TIMESTAMP_FORMAT,
-                    java.util.Locale.getDefault());
-            currentTimeStamp = dateFormat.format(new Date());
+            currentTimeStamp = dateFmt.format(new Date());
         } catch (Exception e) {
-            // Log.e(TAG, Log.getStackTraceString(e));
+            // ALog.e.tagMsg(this, Log.getStackTraceString(e));
         }
 
         return currentTimeStamp;
@@ -244,24 +325,19 @@ public class ALogFileWriter implements ALogOut.LogPrinter {
 
             File dstFile = new File(mLogDir, mLogFileName + ".gz");
             if (dstFile.exists()) {
-                dstFile.delete();
+                deleteFile(dstFile);
             }
 
-            GZIPOutputStream gzout = new GZIPOutputStream(new FileOutputStream(dstFile));
-            FileInputStream in = new FileInputStream(mLogFile);
-
-            int len;
-            while ((len = in.read(buffer)) > 0) {
-                gzout.write(buffer, 0, len);
+            try (GZIPOutputStream gzout = new GZIPOutputStream(new FileOutputStream(dstFile))) {
+                try (FileInputStream in = new FileInputStream(mLogFile)) {
+                    int len;
+                    while ((len = in.read(buffer)) > 0) {
+                        gzout.write(buffer, 0, len);
+                    }
+                }
             }
 
-            in.close();
-
-            gzout.finish();
-            gzout.close();
-
-            dstFile.setReadable(true, false);
-            dstFile.setWritable(true, false);
+            setPermissions(dstFile);
         } catch (IOException ex) {
             ex.printStackTrace();
         }
@@ -286,16 +362,54 @@ public class ALogFileWriter implements ALogOut.LogPrinter {
                 archiveLog();
 
                 mLogFile = new File(mLogDir, mLogFileName);
+                //noinspection ResultOfMethodCallIgnored
                 mLogFile.createNewFile();
-                mLogFile.setReadable(true, false);
-                mLogFile.setWritable(true, false);
-
+                setPermissions(mLogFile);
                 createdNewLogFile = true;
             }
-        } catch (IOException e) {
-            // Log.e(TAG, Log.getStackTraceString(e));
+        } catch (Exception ignore) {
+            // ALog.e.tagMsg(this, Log.getStackTraceString(e));
         }
 
         return createdNewLogFile;
+    }
+
+    /**
+     * Alternate version then system method File.mkdirs() which returns false if directory exists.
+     */
+    private static boolean makeDirs(@Nullable File file) {
+        try {
+            if (file == null || file.exists()) {
+                return true;
+            }
+
+            if (file.mkdir()) {
+                return true;
+            }
+
+            File canonFile;
+            try {
+                canonFile = file.getCanonicalFile();
+            } catch (IOException ex) {
+                ALog.w.tagMsg(TAG, "mkdirs failed ", ex);
+                return false;
+            }
+
+            File parent = canonFile.getParentFile();
+            return (parent != null && makeDirs(parent) && canonFile.mkdir());
+        } catch (Exception ex) {
+            ALog.w.tagMsg(TAG, "mkdirs failed ", ex);
+            return false;
+        }
+    }
+
+    public static void deleteFile(@Nullable File file) {
+        try {
+            if (file != null && !file.delete()) {
+                ALog.e.tagMsg(TAG, "delete failed on=", file);
+            }
+        } catch (Exception ex) {
+            ALog.e.tagMsg(TAG, "delete failed on=", file);
+        }
     }
 }

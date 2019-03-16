@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2017 Dennis Lang (LanDen Labs) landenlabs@gmail.com
+ *  Copyright (c) 2019 Dennis Lang(LanDen Labs) landenlabs@gmail.com
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
  *  associated documentation files (the "Software"), to deal in the Software without restriction, including
@@ -23,17 +23,36 @@
 
 package com.landenlabs.all_log.alog;
 
-import android.text.TextUtils;
+import android.app.ActivityManager;
+import android.content.Context;
+import android.net.TrafficStats;
+import android.os.Build;
+import android.os.Debug;
+import android.os.Looper;
 import android.util.Log;
+import android.widget.Toast;
+
+import java.lang.ref.WeakReference;
+
+import static android.content.Context.ACTIVITY_SERVICE;
 
 /**
- * Basic optimized  ALog API:
+ * Log wrapper (helper) enumeration class. Built-in joining of object strings or formatting
+ * delayed until logging is required.
+ * <p>
+ * Avoid pre-joining strings, such as:
+ * <pre><font color="#006000">   ALog.d.tagMsg(this, " var1=" + var1 + " var2=" + var2);
+ * </font></pre>
+ * Instead, let ALog do the joining to avoid overhead when logging is disabled.
+ * <pre><font color="#006000">   ALog.d.tagMsg(this, " var1=", var1, " var2=", var2);
+ * </font></pre>
+ * <p>
+ * Primary methods:
  * <ul>
- *     <li>tagMsg(String tag, String msg)</li>
- *     <li>tagMsg(String tag, String msg, Throwable tr)</li>
- *     <li>tagJoin(String tag, Object... args)</li>
- *     <li>tagFmt(String tag, String fmt, Object... args)</li>
- *     <li>tagCat(String tag, String separator, Object... args)</li>
+ *     <li>tagMsg(Object tag, Object... args)</li>
+ *     <li>tagMsgStack(Object tag, Object... args )</li>
+ *     <li>tagFmt(Object tag, String fmt, Object... args)</li>
+ *     <li>tagCat(Object tag, String separator, Object... args)</li>
  * </ul>
  * <p>
  * Slower methods will automatically generate TAG from stack trace.
@@ -48,12 +67,12 @@ import android.util.Log;
  *     <li>ex(Throwable tr)</li>
  * </ul>
  * <p>
- * <b>Examples:</b>
+ * <b>Examples:</b> 
  * <br><pre><font color="#006000">
  *    // Optimized methods, caller provides TAG.
- *    ALog.d.tagMsg(TAG, "log this message");
- *    ALog.d.tagMsg(TAG, "log this message with exception", ex);
- *    ALog.d.tagJoin(TAG, "Data", badData, " should be", goodData);
+ *    ALog.d.tagMsg(this, "log this message");
+ *    ALog.d.tagMsg(this, "log this message with exception", ex);
+ *    ALog.d.tagMsg(this, "Data", badData, " should be", goodData);
  *    ALog.d.tagFmt(TAG, "First:%s Last:%s", firstName, lastName);
  * </font><font color="#a06000">
  *    // Slower calls will generate TAG from stack trace.
@@ -73,6 +92,7 @@ import android.util.Log;
  *
  */
 
+@SuppressWarnings({"WeakerAccess", "unused"})
 public enum ALog {
 
     // Logging levels (2=V, 3=D, 4=I, 5=W 6=E 7=A)
@@ -105,7 +125,7 @@ public enum ALog {
     ;
 
     /**
-     * Log priorite levels.
+     * Log levels.
      */
     public static final int VERBOSE = Log.VERBOSE;
     public static final int DEBUG = Log.DEBUG;
@@ -113,22 +133,65 @@ public enum ALog {
     public static final int WARN = Log.WARN;
     public static final int ERROR = Log.ERROR;
     public static final int ASSERT = Log.ASSERT;
-    public static final int NOLOGGING = Log.ASSERT+1;
+    public static final int NOLOGGING = Log.ASSERT + 1;
+
 
     /**
-     * Global  Minimum priority level to log, defaults to VERBOSE.
+     * Global  Minimum priority level to log, defaults to WARN.
      */
-    public static int minLevel = VERBOSE;
+    public static int minLevel = WARN;
+    public static final String TAG_PREFIX = "ALOG_";
+
+    /**
+     * Optional context to all Toast message to appear when ERROR occurs.
+     */
+    public static WeakReference<Context> contextRef;
 
     private final int mLevel;
     private final ALogOut mOut = new ALogOut();
-    private static ThreadLocal<String> mThreadTag = new ThreadLocal<String>();
+    private static final ThreadLocal<String> THREAD_TAG = new ThreadLocal<>();
 
+    // Helper to make Log tag from stack, provide class and line number.
+    private static final String NAME = ALog.class.getCanonicalName();
+
+
+    // ---------------------------------------------------------------------------------------------
+
+    /**
+     * Custom formatting TAGs uses optional following parameters.
+     *
+     * Example:
+     *    ALog.tagMsg(this, " Foo=", ALog.Fmt.Id, objFoo, " helloWorld");
+     */
+    public enum Fmt {
+        Id() {
+            void append(CharSequence delimiter, int idx, Object[] tokens, StringBuilder sb)  {
+                // Throws exception if missing argument.
+                sb.append(tagId(tokens[idx]));
+                join(delimiter, idx+1, tokens, sb);
+            }
+        },
+        ;
+
+        void append(CharSequence delimiter, int idx, Object[] tokens, StringBuilder sb)  {
+            join(delimiter, idx, tokens, sb);
+        }
+    }
+
+    // ---------------------------------------------------------------------------------------------
 
     ALog(int level) {
         mLevel = level;
     }
 
+    /**
+     * Provide custom Log Output stream.
+     *
+     * @param level to log (2=V, 3=D, 4=I, 5=W 6=E 7=A)
+     * @param logPrn custom output stream
+     *
+     * @see ALogOut
+     */
     ALog(int level, ALogOut.LogPrinter logPrn) {
         mLevel = level;
         mOut.outPrn = logPrn;
@@ -144,7 +207,7 @@ public enum ALog {
      * @param logPrn Output print target
      * @return ALog chained instance
      */
-    private ALog out(ALogOut.LogPrinter logPrn) {
+    public ALog out(ALogOut.LogPrinter logPrn) {
         mOut.outPrn = logPrn;
         return this;
     }
@@ -153,170 +216,60 @@ public enum ALog {
     // Common API for logging messages.
     // =============================================================================================
 
+    public static String id(Object object) {
+        return "@" + Integer.toHexString(System.identityHashCode(object))
+                + ":" + object.getClass().getName();
+    }
+
     /**
      * If valid log level, Print tag and msg.
      *
-     * @param tagStr Tag to print to log output target.
+     * @param tagObj Tag to print to log output target.
      * @param msgStr Message to print to log output target.
      */
-    public ALog tagMsg(String tagStr, String msgStr) {
+    public void tagMsg(Object tagObj, String msgStr) {
         if (mLevel >= minLevel) {
-            tag(tagStr).msg(msgStr);
+            println(tagStr(tagObj), msgStr);
         }
-        return this;
     }
 
     /**
      * If valid log level, Print tag with args joined together
      *
-     * @param tagStr
-     * @param args
+     * @param tagObj  Present as tag
+     * @param args    If valid level, print all args.
      */
-    public ALog tagJoin(String tagStr, Object... args) {
+    public void tagMsg(Object tagObj, Object... args) {
         if (mLevel >= minLevel) {
-            tag(tagStr).cat("", args);
+            String msgStr = join("", 0, args, null);
+            println(tagStr(tagObj), msgStr);
         }
-        return this;
     }
 
     /**
      * If valid log level, Print tag and msg.
      *
-     * @param tagStr Tag to print to log output target.
+     * @param tagObj Tag to print to log output target.
      * @param msgStr Message to print to log output target.
      * @param tr Trowable stack trace added to output target.
      */
-    public ALog tagMsg(String tagStr, String msgStr, Throwable tr) {
+    public void tagMsg(String tagObj, String msgStr, Throwable tr) {
         if (mLevel >= minLevel) {
-            tag(tagStr).cat("\n", msgStr, Log.getStackTraceString(tr));
+            println(tagStr(tagObj), msgStr + "\n" + Log.getStackTraceString(tr));
         }
-        return this;
     }
 
     /**
-     * If valid log level, format message and print.
-     * <p>
-     * Example:
-     * <br> <font color="green">
-     *   AppLog.LOG.d().tagFmt(tag, "First:%s Last:%s", firstName, lastName);
-     * </font>
+     * If valid log level, Print tag, msg and stack trace.
      *
-     * @param tagStr Tag to print to log output target.
-     * @param fmt  Format used by String.format to build message to print to log output target.
-     * @param args Optional arguments passed to String.format(fmt, ....)
+     * @param tagObj  Present as tag
+     * @param args    If valid level, print all args.
      */
-    public ALog tagFmt(String tagStr, String fmt, Object... args) {
+    public void tagMsgStack(Object tagObj, Object... args) {
         if (mLevel >= minLevel) {
-            String msgStr = String.format(fmt, args);
-            println(mLevel, tagStr, msgStr);
+            String msgStr = join("", 0, args, null);
+            println(tagStr(tagObj), msgStr + " -stack- " + getMsgStack(null));
         }
-        return this;
-    }
-
-    /**
-     * If valid log level, Concatenate strings with <b>separator</b>
-     * <p>
-     * Example:
-     * <br><font color="green">
-     *     AppLog.LOG.d().tagCat(tag, " to ", fromTag, toTag);
-     *     AppLog.LOG.d().tagJoin(tag, fromTag, " to ", toTag);
-     * <br>
-     *     AppLog.LOG.d().tagCat(tag, ", ", firstName, middleName, lastName);
-     * </font>
-     *
-     * @param tagStr Tag to print to log output target.
-     * @param separator String place between argument values.
-     * @param args One or more object to stringize.
-     */
-    public ALog tagCat(String tagStr, String separator, Object... args) {
-        if (mLevel >= minLevel) {
-            String msgStr = TextUtils.join(separator, args);
-            println(mLevel, tagStr, msgStr);
-        }
-        return this;
-    }
-
-
-    /**
-     * If valid log level, Log Throwable message and stacktrace.
-     *
-     * @param tr Throwable logged, message and stack.
-     */
-    public ALog tagTr(String tagStr, Throwable tr) {
-        if (mLevel >= minLevel) {
-            tagCat(tagStr, "\n", tr.getLocalizedMessage(), Log.getStackTraceString(tr));
-        }
-        return this;
-    }
-
-    // =============================================================================================
-    // Tag manipulation
-    // =============================================================================================
-
-    /**
-     * Set log tag, if not set or set with empty string, ALog will auto generate a log from stack trace.
-     * @param tagStr Tag to use in subsequent log printing.
-     * @return ALog chained instance
-     *
-     * @see #self()
-     */
-    public ALog tag(String tagStr) {
-        if (mLevel >= minLevel) {
-            // mTag = tagStr;                     // !!! This is not Thread Safe !!!!
-            mThreadTag.set(tagStr);
-        }
-        return this;
-    }
-
-    /**
-     * Set tag to automatically identify self (class which is calling ALog by stack inspection).
-     * <br><font color="red">
-     * Warning - Stack inspection is very slow.
-     * </font>
-     *
-     * @return ALog chained instance
-     * @see #tag(String)
-     */
-    public ALog self() {
-        if (mLevel >= minLevel) {
-            // mTag = null;                    // !!! This is not Thread Safe !!!!
-            mThreadTag.set(null);
-        }
-        return this;
-    }
-
-    // =============================================================================================
-    // Slow methods which automatically generate TAG from stack trace.
-    // =============================================================================================
-
-    /**
-     * If valid log level, Print msg with any previously set tag.
-     * <p><font color="#ff0000">
-     * Warning - Slower then tagMsg(tag, msg) because Tag generated from stack.
-     * </font><p>
-     * @param msgStr  Message to print to log output target
-     * @see #minLevel
-     */
-    public ALog msg(String msgStr) {
-        if (mLevel >= minLevel) {
-            println(mLevel, findTag(), msgStr);
-        }
-        return this;
-    }
-
-    /**
-     * If valid log level, Print msg with Throwable and any previously set tag.
-     * <p><font color="#ff0000">
-     * Warning - Slower then tagMsg(tag, msg, tr) because Tag generated from stack.
-     * </font><p>
-     * @param msgStr Message to print to log output target
-     * @param tr Throwable stack trace logged.
-     */
-    public ALog msg(String msgStr, Throwable tr) {
-        if (mLevel >= minLevel) {
-            cat("\n", msgStr, Log.getStackTraceString(tr));
-        }
-        return this;
     }
 
     /**
@@ -332,12 +285,154 @@ public enum ALog {
      * @param fmt  Format used by String.format to build message to print to log output target.
      * @param args Optional arguments passed to String.format(fmt, ....)
      */
-    public ALog fmt(String fmt, Object... args) {
+    public void tagFmt(Object tagObj, String fmt, Object... args) {
         if (mLevel >= minLevel) {
-            String msgStr = String.format(fmt, args);
-            println(mLevel, findTag(), msgStr);
+            println(tagStr(tagObj), String.format(fmt, args));
+        }
+    }
+
+    /**
+     * Helper to format objects into strings.
+     */
+    public String toString(Object obj) {
+        if (mLevel >= minLevel) {
+            if (obj instanceof Throwable) {
+                Throwable tr = (Throwable)obj;
+                return "Exception Msg=" + tr.getLocalizedMessage()
+                        + (tr.getCause()!=null ? " Cause=" + tr.getCause() : "");
+            } else {
+                return obj.toString();
+            }
+        } else {
+            return "";
+        }
+    }
+
+
+    // =============================================================================================
+    // Tag manipulation
+    // =============================================================================================
+
+    /**
+     * Set log tag, if not set or set with empty string, ALog will auto generate a log from stack trace.
+     * @param tagStr Tag to use in subsequent log printing.
+     * @return ALog chained instance
+     *
+     * @see #self()
+     */
+    public ALog tag(String tagStr) {
+        if (mLevel >= minLevel) {
+            THREAD_TAG.set(tagStr);
         }
         return this;
+    }
+
+    /**
+     * Set log tag, if not set or set with empty string, ALog will auto generate a log from stack trace.
+     * @param obj Tag to use in subsequent log printing. Use object's simple class name.
+     * @return ALog chained instance
+     *
+     * @see #self()
+     */
+    public ALog tag(Object obj) {
+        if (mLevel >= minLevel) {
+            THREAD_TAG.set(tagStr(obj));
+        }
+        return this;
+    }
+
+    public static String tagStr(Object obj) {
+        String str = tagId(obj);
+
+        if (Looper.getMainLooper().getThread() == Thread.currentThread()) {
+            str = str + "#Tmain";
+        } else {
+            str = str + "#T" + Thread.currentThread().getId();
+        }
+        return str;
+    }
+
+    public static String tagId(Object obj) {
+        String str;
+        if (obj == null) {
+            str = "(null)";
+        } else  if (obj instanceof String) {
+            str = obj.toString();
+        } else {
+            str = obj.getClass().getSimpleName() + "@" + Integer
+                    .toHexString(System.identityHashCode(obj));
+        }
+        return str;
+    }
+
+    /**
+     * Set tag to automatically identify self (class which is calling ALog by stack inspection).
+     * <br><font color="red">
+     * Warning - Stack inspection is very slow.
+     * </font>
+     *
+     * @return ALog chained instance
+     * @see #tag(String)
+     */
+    public ALog self() {
+        if (mLevel >= minLevel) {
+            THREAD_TAG.set(null);
+        }
+        return this;
+    }
+
+    // =============================================================================================
+    // Slow methods which automatically generate TAG from stack trace.
+    // =============================================================================================
+
+    /**
+     * If valid log level, Print msg with any previously set tag.
+     * <p><font color="#ff0000">
+     * Warning - Slower then tagMsg(this, msg) because Tag generated from stack.
+     * </font><p>
+     * @param args  Message to print to log output target
+     * @see #minLevel
+     */
+    public void msg(Object ... args) {
+        if (mLevel >= minLevel) {
+            String msgStr = join("",0,  args, null);
+            println(findTag(), msgStr);
+        }
+    }
+
+
+    /**
+     * If valid log level, Print msg with Throwable and any previously set tag.
+     * <p><font color="#ff0000">
+     * Warning - Slower then tagMsg(this, msg, tr) because Tag generated from stack.
+     * </font><p>
+     * @param msgStr Message to print to log output target
+     * @param tr Throwable stack trace logged.
+     */
+    public void msg(String msgStr, Throwable tr) {
+        if (mLevel >= minLevel) {
+            cat("\n", msgStr, Log.getStackTraceString(tr));
+        }
+    }
+
+    /**
+     * If valid log level, format message and print.
+     * <p>
+     * Example:
+     * <br> <font color="green">
+     *   AppLog.LOG.d().fmt("First:%s Last:%s", firstName, lastName);
+     * </font>
+     * <p><font color="#ff0000">
+     * Warning - Slower then tagFmt(tag, fmt, ...) because Tag generated from stack.
+     * </font><p>
+     * @param fmt  Format used by String.format to build message to print to log output target.
+     * @param args Optional arguments passed to String.format(fmt, ....)
+     */
+    public void fmt(String fmt, Object... args) {
+        if (mLevel >= minLevel) {
+            String msgStr = String.format(fmt, args);
+            println(findTag(), msgStr);
+        }
     }
 
     /**
@@ -353,12 +448,11 @@ public enum ALog {
      * @param separator String place between argument values.
      * @param args One or more object to stringize.
      */
-    public ALog cat(String separator, Object... args) {
+    public void cat(String separator, Object... args) {
         if (mLevel >= minLevel) {
-            String msgStr = TextUtils.join(separator, args);
-            println(mLevel, findTag(), msgStr);
+            String msgStr = join(separator, 0, args, null);
+            println(findTag(), msgStr);
         }
-        return this;
     }
 
     /**
@@ -366,11 +460,93 @@ public enum ALog {
      *
      * @param tr Throwable logged, message and stack.
      */
-    public ALog tr(Throwable tr) {
+    public void tr(Throwable tr) {
         if (mLevel >= minLevel) {
             cat("\n", tr.getLocalizedMessage(), Log.getStackTraceString(tr));
         }
-        return this;
+    }
+
+    /**
+     * Returns a string containing the tokens joined by delimiters.
+     * @param tokens an array objects to be joined. Strings will be formed from
+     *     the objects by calling object.toString().
+     */
+    public static String join(CharSequence delimiter, int idx, Object[] tokens, StringBuilder sb) {
+        if (sb == null) {
+            sb = new StringBuilder();
+        }
+        while (idx < tokens.length) {
+            Object token = tokens[idx];
+            if (idx != 0) {
+                sb.append(delimiter);
+            }
+            idx++;
+            if (token instanceof Throwable) {
+                Throwable tr = (Throwable) token;
+                sb.append("Exception Msg=").append(tr.getLocalizedMessage());
+                if (tr.getCause() != null) {
+                    sb.append(" Cause=").append(tr.getCause());
+                }
+            } else if (token instanceof Fmt) {
+                ((Fmt)token).append(delimiter, idx, tokens, sb);  // format All remainnng tokens.
+                break;
+            } else {
+                sb.append(token);
+            }
+        }
+        return sb.toString();
+    }
+
+    /**
+     * Log exception and throw it.
+     */
+    public static  void throwIt(Object tag, Error ex) throws Error  {
+        ALog.e.tagMsg(tag, getMsgStack(ex));
+        throw ex;
+    }
+    public static  void throwIt(Object tag, Exception ex)  throws Exception {
+        ALog.e.tagMsg(tag, getMsgStack(ex));
+        throw ex;
+    }
+
+    /**
+     * Helper to return string of Throwable (exception)  message and stack trace.
+     *
+     * @param tr Exception to inspect or null for current stack trace.
+     * @return message and stack trace
+     */
+    public static String getMsgStack(Throwable tr) {
+        if (tr == null) {
+            tr = new Exception("");
+        }
+        return tr.getLocalizedMessage() + "\n" + Log.getStackTraceString(tr);
+    }
+
+    /**
+     * Include memory usage with message
+     */
+    public void memory(Object tagObj, Context context,  Object... args) {
+        if (mLevel >= minLevel) {
+            if (Build.VERSION.SDK_INT >= 23) {
+                System.gc();
+                ActivityManager activityManager =
+                        (ActivityManager) context.getSystemService(ACTIVITY_SERVICE);
+                Debug.MemoryInfo[] memInfos =
+                        activityManager.getProcessMemoryInfo(new int[]{android.os.Process.myPid()});
+                Debug.MemoryInfo memoryInfo = memInfos[0];
+
+                tagMsg(tagObj,
+                        join("", 0, args, null),
+                        " Memory javaHeap=",
+                        memoryInfo.getMemoryStat("summary.java-heap"),
+                        " nativeHeap=",
+                        memoryInfo.getMemoryStat("summary.native-heap"),
+                        " graphics=",
+                        memoryInfo.getMemoryStat("summary.graphics"),
+                        " NetRcv=", TrafficStats.getUidRxBytes(android.os.Process.myUid())
+                );
+            }
+        }
     }
 
     // =============================================================================================
@@ -379,20 +555,35 @@ public enum ALog {
 
     /**
      * Print level, tag and message to output target.
-     *
-     * @param level
-     * @param tag
-     * @param msg
      */
-    private void println(int level, String tag, String msg) {
-        mOut.outPrn.println(mLevel, tag, msg);
+    protected void println(String tag, String msg) {
+        try {
+            int preLen = TAG_PREFIX.length();
+            int tagLen = tag.length();
+            final int maxTagLen = mOut.outPrn.maxTagLen();
+
+            // As of Nougat (7.0, api 24) the tag length must not exceed 23 characters.
+            // If tag is too long, only show prefix in Tag field and present remainder
+            // in message field.
+            if (preLen + tagLen <= maxTagLen) {
+                mOut.outPrn.println(mLevel, TAG_PREFIX + tag, msg);
+            } else {
+                mOut.outPrn.println(mLevel, TAG_PREFIX, tag + ": " + msg);
+            }
+
+            if (contextRef != null && mLevel >= ERROR) {
+                if (Looper.getMainLooper().getThread() == Thread.currentThread()) {
+                    Toast.makeText(contextRef.get(), msg, Toast.LENGTH_LONG).show();
+                }
+            }
+        } catch (IllegalArgumentException ex) {
+            mOut.outPrn.println(mLevel, TAG_PREFIX, ex.getMessage());
+        }
     }
 
-
-    // Helper to make Log tag from stack, provide class and line number.
-    private static final String NAME = ALog.class.getCanonicalName();
-
     /**
+     * Helper to make Log tag from stack, provide class and line number.
+     *
      * Make a Log tag by locating class calling ALog.
      *
      * @return  "filename:lineNumber"
@@ -405,22 +596,51 @@ public enum ALog {
             if (elem.getMethodName().equals("makeTag") && elem.getClassName().equals(NAME)) {
                 while (++idx < ste.length) {
                     elem = ste[idx];
-                    if (!elem.getClassName().equals(NAME))
+                    if (!elem.getClassName().equals(NAME)) {
                         break;
+                    }
                 }
-                tag = "("+elem.getFileName() + ":" + elem.getLineNumber()+")";
+                tag = elem.getFileName() + ":" + elem.getLineNumber();
                 return tag;
             }
         }
         return tag;
     }
 
+
+    /**
+     * Make a Log tag by locating class calling ALog, then backup until found entry with
+     * 'containsClass'
+     *
+     * @return  "filename:lineNumber"
+     */
+    public static String makeTag(String containsClass) {
+        String tag = "";
+        final StackTraceElement[] ste = Thread.currentThread().getStackTrace();
+        for (int idx = 0; idx < ste.length; idx++) {
+            StackTraceElement elem = ste[idx];
+            if (elem.getMethodName().equals("makeTag") && elem.getClassName().equals(NAME)) {
+                idx++;  // skip caller
+                while (++idx < ste.length) {
+                    elem = ste[idx];
+                    if (elem.getClassName().contains(containsClass)) {
+                        break;
+                    }
+                }
+                tag = elem.getFileName() + ":" + elem.getLineNumber();
+                return tag;
+            }
+        }
+        return tag;
+    }
+
+
     /**
      * Get previously set <b>tag</b> or generate a tag by inspecting the stacktrace.
      * @return User provided tag or "filename:lineNumber"
      */
-    private String findTag() {
-        String tag = mThreadTag.get();
+    public String findTag() {
+         String tag = THREAD_TAG.get();
         return (tag != null) ? tag : makeTag();
     }
 }
