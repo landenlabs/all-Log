@@ -489,7 +489,7 @@ public enum ALog {
      * @param tokens an array objects to be joined. Strings will be formed from
      *     the objects by calling object.toString().
      *
-     * Similar to TextUtils.join with custom support for stringizing Throwable. 
+     * Similar to TextUtils.join with custom support for stringizing Throwable.
      */
     public static String join(CharSequence delimiter, int idx, Object[] tokens, StringBuilder sb) {
         if (sb == null) {
