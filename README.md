@@ -1,7 +1,7 @@
 ### ALog - by LanDen Labs 
 Android ALog - Enhanced Log Wrapper
 
-***apk v1.1  Available in dist directgory to demonstrate and test ALog ***
+***apk v1.58  Available in dist directgory to demonstrate and test ALog ***
 
 WebSite
 [http://landenlabs.com/android/alog/index.html](http://landenlabs.com/android/alog/index.html)
@@ -18,7 +18,7 @@ ALog is an Android Log wrapper which has the following features:
 log level below min level.  Message presentation (formatting or concatenation) 
 only occur if logging is required. 
 
->   4. Chainable \- Calls are chainable making it easier to extend parameter processing. 
+>   4. Chainable \- Some calls are chainable making it easier to extend parameter processing. 
 
 >   5. ThreadSafe \- Logs can be generated in concurrent threads.
 

@@ -158,10 +158,21 @@ public enum ALog {
     // ---------------------------------------------------------------------------------------------
 
     /**
-     * Custom formatting TAGs uses optional following parameters.
+     * Custom formatting TAGs - uses optional parameters following ALog.Fmt.xxx tag
+     *
+     * Extend this method to support your own custom formatting needs. The goal is to avoid
+     * preformatting any log information until the log message is needed (inside log level threshold).
+     *
+     * ID -
+     * The Id is identical to the default Tag value which is the objects class name and unique id.
+     * The Id is useful to monitor a collection of similar objects where the unique id helps distinguish
+     * instance from one another.
+     *
+     *   Example ID for Instance of Foo
+     *     Foo@12345
      *
      * Example:
-     *    ALog.tagMsg(this, " Foo=", ALog.Fmt.Id, objFoo, " helloWorld");
+     *    ALog.tagMsg(this, "pre msg", " Foo=", ALog.Fmt.Id, objFoo, " tailer msg");
      */
     public enum Fmt {
         Id() {
@@ -185,12 +196,13 @@ public enum ALog {
     }
 
     /**
-     * Provide custom Log Output stream.
+     * Set custom Log Output stream.
      *
      * @param level to log (2=V, 3=D, 4=I, 5=W 6=E 7=A)
      * @param logPrn custom output stream
      *
      * @see ALogOut
+     * @see ALogFileWriter
      */
     ALog(int level, ALogOut.LogPrinter logPrn) {
         mLevel = level;
@@ -206,6 +218,9 @@ public enum ALog {
      * </font>
      * @param logPrn Output print target
      * @return ALog chained instance
+     *
+     * @see ALogOut
+     * @see ALogFileWriter
      */
     public ALog out(ALogOut.LogPrinter logPrn) {
         mOut.outPrn = logPrn;
@@ -216,6 +231,9 @@ public enum ALog {
     // Common API for logging messages.
     // =============================================================================================
 
+    /**
+     * Generate object ID  className@uniqueHashCode, ex Foo@12345
+     */
     public static String id(Object object) {
         return "@" + Integer.toHexString(System.identityHashCode(object))
                 + ":" + object.getClass().getName();
@@ -470,6 +488,8 @@ public enum ALog {
      * Returns a string containing the tokens joined by delimiters.
      * @param tokens an array objects to be joined. Strings will be formed from
      *     the objects by calling object.toString().
+     *
+     * Similar to TextUtils.join with custom support for stringizing Throwable. 
      */
     public static String join(CharSequence delimiter, int idx, Object[] tokens, StringBuilder sb) {
         if (sb == null) {
