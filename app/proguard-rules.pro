@@ -23,3 +23,22 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+
+-assumenosideeffects enum com.landenlabs.all_log.alog.ALog {
+    public void tagMsg(...);
+    public void tagFmt(...);
+    public void msg(...);
+
+    # public static void i(...);
+    # public static void d(...);
+}
+
+-assumenosideeffects class com.landenlabs.all_log.alog.ALog {
+    public void tagMsg(...);
+    public void tagFmt(...);
+    public void msg(...);
+
+    # public static void i(...);
+    # public static void d(...);
+}

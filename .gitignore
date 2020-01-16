@@ -1,4 +1,6 @@
 *.iml
+*.zip
+*.txt
 .gradle
 /local.properties
 /.idea/workspace.xml
@@ -12,3 +14,5 @@ accounts.xml
 release.properties
 Keystore
 git-notes.txt
+*.xcf
+/dist

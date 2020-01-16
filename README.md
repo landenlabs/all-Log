@@ -1,7 +1,15 @@
 ### ALog - by LanDen Labs 
 Android ALog - Enhanced Log Wrapper
+<br>
+15-Jan-2020
+<br>
+API 28, Android, Java
+
 
 ***apk v1.58  Available in dist directgory to demonstrate and test ALog ***
+
+  [![Build status](https://travis-ci.org/landenlabs/all_Log.svg?branch=master)](https://travis-ci.org/landenlabs/all_Log)
+
 
 WebSite
 [http://landenlabs.com/android/alog/index.html](http://landenlabs.com/android/alog/index.html)

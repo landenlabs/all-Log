@@ -260,6 +260,8 @@ public class MainActivity extends Activity
 
         Exception ex = new Exception("test exception");
         ALog.e.tr(ex);
+
+        LogTester.test1();
     }
 
 
