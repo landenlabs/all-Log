@@ -17,7 +17,7 @@
  *  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  *  @author Dennis Lang  (Jan-2017)
- *  @see http://landenlabs.com
+ *  @see https://landenlabs.com
  *
  */
 
@@ -42,7 +42,7 @@ import java.io.InputStreamReader;
  */
 
 public class LogUtil {
-    private static String TAG = "LogUtil";
+    private static final String TAG = "LogUtil";
 
     /**
      * Clear device log file and private logFile.
@@ -149,12 +149,7 @@ public class LogUtil {
             @Override
             protected void onProgressUpdate(String... values) {
                 textView.append(values[0] + "\n");
-                scrollView.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        scrollView.fullScroll(View.FOCUS_DOWN);
-                    }
-                });
+                scrollView.post(() -> scrollView.fullScroll(View.FOCUS_DOWN));
             }
         };
 
@@ -175,7 +170,7 @@ public class LogUtil {
 
                     BufferedReader bufferedReader;
                     long lastFileLen = file.length();
-                    long lastMod = file.lastModified();
+                    final long lastMod = file.lastModified();
 
                     @Override
                     protected Void doInBackground(Void... params) {
@@ -211,12 +206,7 @@ public class LogUtil {
                     @Override
                     protected void onProgressUpdate(String... values) {
                         textView.append(values[0] + "\n");
-                        scrollView.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                scrollView.fullScroll(View.FOCUS_DOWN);
-                            }
-                        });
+                        scrollView.post(() -> scrollView.fullScroll(View.FOCUS_DOWN));
                     }
                 };
 

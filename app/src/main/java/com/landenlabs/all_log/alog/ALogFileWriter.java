@@ -17,7 +17,7 @@
  *  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  *  @author Dennis Lang  (Jan-2017)
- *  @see http://landenlabs.com
+ *  @see https://landenlabs.com
  *
  */
 
@@ -25,14 +25,14 @@ package com.landenlabs.all_log.alog;
 
 import android.content.Context;
 import android.os.Looper;
-import android.support.annotation.Nullable;
-import android.support.annotation.WorkerThread;
+import androidx.annotation.Nullable;
+import androidx.annotation.WorkerThread;
 
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -138,7 +138,6 @@ public class ALogFileWriter implements ALogOut.LogPrinter {
         mFileSizeLimit = fileSizeLimit;
 
         File dir = new File(mLogDir);
-        //noinspection ResultOfMethodCallIgnored
         makeDirs(dir);
 
         mLogFile = new File(mLogDir, logFileName);
@@ -202,7 +201,6 @@ public class ALogFileWriter implements ALogOut.LogPrinter {
     public void delete() {
         close();
         if (mLogFile != null) {
-            //noinspection ResultOfMethodCallIgnored
             deleteFile(mLogFile);
         }
     }
@@ -214,7 +212,6 @@ public class ALogFileWriter implements ALogOut.LogPrinter {
     public void clear() {
         close();
         if (mLogFile != null) {
-            //noinspection ResultOfMethodCallIgnored
             deleteFile(mLogFile);
             open(mLogFileName, mFileSizeLimit);
         }
@@ -328,11 +325,13 @@ public class ALogFileWriter implements ALogOut.LogPrinter {
                 deleteFile(dstFile);
             }
 
-            try (GZIPOutputStream gzout = new GZIPOutputStream(new FileOutputStream(dstFile))) {
-                try (FileInputStream in = new FileInputStream(mLogFile)) {
-                    int len;
-                    while ((len = in.read(buffer)) > 0) {
-                        gzout.write(buffer, 0, len);
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                try (GZIPOutputStream gzout = new GZIPOutputStream(Files.newOutputStream(dstFile.toPath()))) {
+                    try (FileInputStream in = new FileInputStream(mLogFile)) {
+                        int len;
+                        while ((len = in.read(buffer)) > 0) {
+                            gzout.write(buffer, 0, len);
+                        }
                     }
                 }
             }

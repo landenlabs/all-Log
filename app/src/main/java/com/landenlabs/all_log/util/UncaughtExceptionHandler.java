@@ -17,12 +17,14 @@
  *  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  *  @author Dennis Lang  (Jan-2017)
- *  @see http://landenlabs.com
+ *  @see https://landenlabs.com
  *
  */
-package com.landenlabs.all_log;
+package com.landenlabs.all_log.util;
 
 import android.util.Log;
+
+import androidx.annotation.NonNull;
 
 import java.text.SimpleDateFormat;
 
@@ -33,9 +35,9 @@ public class UncaughtExceptionHandler implements Thread.UncaughtExceptionHandler
 
     private static final String APP_VERSION_INFO_ID_FORMAT = "%s; version info";
     private static final String ERROR_REPORT_FORMAT = "yyyy.MM.dd HH:mm:ss z";
-    private SimpleDateFormat format = new SimpleDateFormat(ERROR_REPORT_FORMAT);
+    private final SimpleDateFormat format = new SimpleDateFormat(ERROR_REPORT_FORMAT);
 
-    private Thread.UncaughtExceptionHandler originalHandler;
+    private final Thread.UncaughtExceptionHandler originalHandler;
 
     /**
      * Creates a reporter instance
@@ -48,7 +50,7 @@ public class UncaughtExceptionHandler implements Thread.UncaughtExceptionHandler
     }
 
     @Override
-    public void uncaughtException(Thread thread, Throwable ex) {
+    public void uncaughtException(@NonNull Thread thread, @NonNull Throwable ex) {
 
         String stackTrace = Log.getStackTraceString(ex);
         Log.d("UncaughtException", stackTrace);

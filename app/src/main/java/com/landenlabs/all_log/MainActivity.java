@@ -17,7 +17,7 @@
  *  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  *  @author Dennis Lang  (Jan-2017)
- *  @see http://landenlabs.com
+ *  @see https://landenlabs.com
  *
  */
 
@@ -40,6 +40,7 @@ import com.landenlabs.all_log.alog.ALog;
 import com.landenlabs.all_log.alog.ALogFileWriter;
 import com.landenlabs.all_log.alog.AppLog;
 import com.landenlabs.all_log.util.LogUtil;
+import com.landenlabs.all_log.util.UncaughtExceptionHandler;
 
 import java.util.concurrent.CountDownLatch;
 
@@ -55,7 +56,7 @@ import static com.landenlabs.all_log.alog.ALogFileWriter.Default;
 
 /**
  * ALog API Demo and Tester application.
- *
+ * <p>
  * Demo AppLog and ALog API.
  *
  * @author Dennis Lang
@@ -84,7 +85,7 @@ public class MainActivity extends Activity
     private CheckBox mThread1Cb;
     private CheckBox mThread2Cb;
 
-    private UncaughtExceptionHandler uncaughtExceptionHandler = new UncaughtExceptionHandler();
+    private final UncaughtExceptionHandler uncaughtExceptionHandler = new UncaughtExceptionHandler();
 
 
     enum LogTypes {logMsg, logCat, logJoin, logFmt, logThrow}
@@ -93,7 +94,7 @@ public class MainActivity extends Activity
     private boolean mFileLog = false;
 
     // Thread stuff
-    private static volatile boolean mThreadRunning = true;
+    private static final boolean mThreadRunning = true;
     private static int gLevel =1;
     CountDownLatch mStartSignal = new CountDownLatch(1);
     CountDownLatch mResumeSignal = new CountDownLatch(1);

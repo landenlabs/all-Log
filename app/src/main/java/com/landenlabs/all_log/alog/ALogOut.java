@@ -17,7 +17,7 @@
  *  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  *  @author Dennis Lang  (Jan-2017)
- *  @see http://landenlabs.com
+ *  @see https://landenlabs.com
  *
  */
 package com.landenlabs.all_log.alog;

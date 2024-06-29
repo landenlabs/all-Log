@@ -17,7 +17,7 @@
  *  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  *  @author Dennis Lang  (Jan-2017)
- *  @see http://landenlabs.com
+ *  @see https://landenlabs.com
  *
  */
 
@@ -39,12 +39,12 @@ import static com.landenlabs.all_log.alog.AppLog.OutLog.LogSys;
  * <Pre color="red">
  *     // Set minimum logging level for all logging.
  *     AppLog.setMinLevel(Log.DEBUG);
- *
+ * <p>
  *     AppLog.LOG_FRAGMENTS.d().tag(mTag).cat(" ",
  *          "mapViewWidth=", mapViewWidth, " mapVisibleRegion=", mapVisibleRegion);
- *
+ * <p>
  *     AppLog.LOGFILE.d().self().fmt("%s=%s", "key", "vaue");
- *
+ * <p>
  *     AppLog.LOG_NETWORK.enabled = true;
  * </Pre>
  *
@@ -179,7 +179,6 @@ public enum AppLog {
     /**
      * Set global minimum log level
      *
-     * @param level
      */
     public static void setMinLevel(int level) {
         ALog.minLevel = level;

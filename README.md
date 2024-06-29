@@ -12,9 +12,9 @@ API 28, Android, Java
 
 
 WebSite
-[http://landenlabs.com/android/alog/index.html](http://landenlabs.com/android/alog/index.html)
+[https://landenlabs.com/android/alog/index.html](https://landenlabs.com/android/alog/index.html)
 
-![ALog](http://landenlabs.com//android/alog/alog.png)
+![ALog](https://landenlabs.com//android/alog/alog.png)
 
 ALog is an Android Log wrapper which has the following features:
 
@@ -370,7 +370,7 @@ See above API samples, JavaDoc, Code and Demo app for examples of usage.
  *  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  *  @author Dennis Lang  (Jan-2017)
- *  @see http://landenlabs.com
+ *  @see https://landenlabs.com
  *
  */
 ```

@@ -17,7 +17,7 @@
  *  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  *  @author Dennis Lang  (Jan-2017)
- *  @see http://landenlabs.com
+ *  @see https://landenlabs.com
  *
  */
 
@@ -40,7 +40,7 @@ public class StrUtil {
         return (str1 + sep + str2);
     }
 
-    private static final int LineColors[] = { 0xffe0ffff, 0xffffe0ff };
+    private static final int[] LineColors = { 0xffe0ffff, 0xffffe0ff };
 
     /**
      * Colorize multi line data (alternating colors per line).
