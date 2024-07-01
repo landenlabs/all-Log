@@ -66,7 +66,7 @@ android {
         }
     }
 
-    lintOptions {
+    lint {
         abortOnError false
         disable 'DefaultLocale', 'SimpleDateFormat', 'InflateParams', 'SpUsage',
                 'UseCompoundDrawables', 'HandlerLeak', 'ViewConstructor', 'SetTextI18n',
