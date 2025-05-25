@@ -7,13 +7,13 @@ plugins {
 }
 
 android {
-    compileSdk 34
+    compileSdk 35
     namespace "com.landenlabs.all_log"
 
     defaultConfig {
         applicationId "com.landenlabs.all_log"
         minSdkVersion 23
-        targetSdkVersion 34
+        targetSdkVersion 35
 
         versionCode 20629
         versionName '2.06.29'
@@ -46,6 +46,8 @@ android {
         android.signingConfigs.release.keyPassword = props.keyAliasPassword
         println("Setting release to " + signingConfigs.release.storeFile.absolutePath )
     }
+
+    buildFeatures.buildConfig = true
 
     buildTypes {
         release {
@@ -91,8 +93,8 @@ dependencies {
 // Rename app
 android.applicationVariants.configureEach { variant ->
     variant.outputs.configureEach {
-        def ourname = project.parent.name
-        outputFileName = "$ourname-${variant.name}-${variant.versionName}.apk"
+        def ourName = project.parent.name
+        outputFileName = "$ourName-${variant.name}-${variant.versionName}.apk"
         println "out name= $outputFileName"
     }
 }
