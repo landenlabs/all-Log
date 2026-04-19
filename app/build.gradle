@@ -2,23 +2,24 @@
 // module build.gradle
 
 plugins {
-    id ("com.android.application")
-    id ("org.jetbrains.kotlin.android") // Prevents duplicate kotlin warnings
+    id "com.android.application"
 }
 
 android {
-    compileSdk 35
-    namespace "com.landenlabs.all_log"
+    namespace = "com.landenlabs.all_log"
+    compileSdk = 36
 
     defaultConfig {
-        applicationId "com.landenlabs.all_log"
-        minSdkVersion 23
-        targetSdkVersion 35
+        applicationId = "com.landenlabs.all_log"
+        minSdk = 23
+        targetSdk = 36
 
-        versionCode 20629
-        versionName '2.06.29'
+        versionCode = 60420
+        versionName = '6.04.20' // 2026 April(04) 19th
+        // Restore the versionName resource for layouts
+        resValue "string", "versionName", "v" + versionName
 
-        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // Limit languages to following list.
         resConfigs "en", "es"
@@ -26,75 +27,77 @@ android {
         buildConfigField "long", "BuildTimeMilli", System.currentTimeMillis() + "L"
     }
 
-    // Save app version in string so resource can be used in layouts
-    applicationVariants.configureEach { variant ->
-        variant.resValue "string", "versionName", "v" + variant.versionName
-    }
-
     signingConfigs {
-        release
+        release {
+            // Load signing config (does not work for command line builds)
+            if (file("${rootDir}/release.properties").exists()) {
+                def props = new Properties()
+                props.load(new FileInputStream(file("${rootDir}/release.properties")))
+                storeFile = file(props.keyStore)
+                storePassword = props.keyStorePassword
+                keyAlias = props.keyAlias
+                keyPassword = props.keyAliasPassword
+                println("Setting release to " + storeFile.absolutePath)
+            }
+        }
     }
 
-    // Load signing config (does not work for command line builds)
-    // println("Setting release=${rootDir}/release.properties")
-    if (file("${rootDir}/release.properties").exists()) {
-        def props = new Properties()
-        props.load(new FileInputStream(file("${rootDir}/release.properties")))
-        android.signingConfigs.release.storeFile = file(props.keyStore)
-        android.signingConfigs.release.storePassword = props.keyStorePassword
-        android.signingConfigs.release.keyAlias = props.keyAlias
-        android.signingConfigs.release.keyPassword = props.keyAliasPassword
-        println("Setting release to " + signingConfigs.release.storeFile.absolutePath )
+    buildFeatures {
+        buildConfig = true
+        resValues = true
     }
-
-    buildFeatures.buildConfig = true
 
     buildTypes {
         release {
             // Enables code shrinking, obfuscation, and optimization.
-            minifyEnabled true
+            minifyEnabled = true
 
             // List of resources removed at end of generated mapping file:
-            // grep unused ./app/build/outputs/mapping/demoRelease/resources.txt
-            shrinkResources true
+            shrinkResources = true
 
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.release
+            signingConfig = signingConfigs.release
 
             ndk {
-                // abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
                 abiFilters 'armeabi-v7a', 'arm64-v8a'
             }
         }
     }
 
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(17)
+        }
+    }
+
     lint {
-        abortOnError false
+        abortOnError = false
         disable 'DefaultLocale', 'SimpleDateFormat', 'InflateParams', 'SpUsage',
                 'UseCompoundDrawables', 'HandlerLeak', 'ViewConstructor', 'SetTextI18n',
                 'RtlSymmetry', 'RtlHardcoded', 'ContentDescription',
                 'MissingTranslation', 'ValidFragment', 'UnusedAttribute'
     }
-
-    gradle.projectsEvaluated {
-        tasks.withType(JavaCompile).tap {
-            configureEach {
-                // Enable verbose lint reporting during build.
-                options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
-            }
-        }
-    }
 }
 
 dependencies {
-    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'androidx.appcompat:appcompat:1.7.1'
 }
 
-// Rename app
-android.applicationVariants.configureEach { variant ->
-    variant.outputs.configureEach {
-        def ourName = project.parent.name
-        outputFileName = "$ourName-${variant.name}-${variant.versionName}.apk"
-        println "out name= $outputFileName"
-    }
+// Rename app - Fixed for AGP 9.x using androidComponents
+androidComponents {
+    onVariants(selector().all(), { variant ->
+        variant.outputs.forEach { output ->
+            def ourName = project.parent.name
+            def buildType = variant.buildType
+            def versionStr = variant.outputs[0].versionName.get().replaceAll("-.*", "")
+            def flavor = variant.flavorName ?: ""
+            def newNameRoot = "${ourName}${flavor}-${buildType}-${versionStr}"
+            output.outputFileName.set("${newNameRoot}.apk")
+        }
+    })
 }
