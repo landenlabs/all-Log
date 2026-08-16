@@ -1,7 +1,6 @@
 *.apk
 *.class
 *.dex
-*.idea
 *.iml
 *.ipr
 *.iws
@@ -26,6 +25,5 @@ hide/
 local.properties
 accounts.xml
 git-notes.txt
-git-notes.txt*.iml
 google-services.json
 release.properties
