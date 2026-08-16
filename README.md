@@ -14,7 +14,7 @@ API 28, Android, Java
 WebSite
 [https://landenlabs.com/android/alog/index.html](https://landenlabs.com/android/alog/index.html)
 
-![ALog](https://landenlabs.com//android/alog/alog.png)
+![ALog](screens/alog.png)
 
 ALog is an Android Log wrapper which has the following features:
 
@@ -38,9 +38,10 @@ only occur if logging is required.
 4. [AppLog](#applog)
 5. [Install](#install)
 6. [Build](#build)
-7. [Use](#use)
-8. [License](#license)
-9. [Websites](#website)
+7. [JavaDoc](#javadoc)
+8. [Use](#use)
+9. [License](#license)
+10. [Websites](#website)
 
 ***
 <a name="overview"></a>
@@ -335,6 +336,21 @@ Core class files:
 
 Optional Extended abstraction class file:
 * AppLog - Enumeration to manage <b>named</b> logging instances which can have different targets.
+
+[To Top](#table)
+
+***
+<a name="javadoc"></a>
+**JavaDoc**
+
+Generated API documentation is checked into the [javadoc](javadoc) directory. Open
+[javadoc/index.html](javadoc/index.html) in a browser to view it.
+
+Regenerate it after source changes with:
+
+```
+./gradlew generateJavadoc
+```
 
 [To Top](#table)
 

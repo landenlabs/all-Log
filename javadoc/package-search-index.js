@@ -1,0 +1,1 @@
+packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"l":"com.landenlabs.all_log"},{"l":"com.landenlabs.all_log.alog"},{"l":"com.landenlabs.all_log.util"}];updateSearchResults();

@@ -88,6 +88,22 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.8.0'
 }
 
+// Regenerate the checked-in javadoc/ directory: ./gradlew generateJavadoc
+tasks.register('generateJavadoc', Javadoc) {
+    def localProps = new Properties()
+    def localPropsFile = rootProject.file('local.properties')
+    if (localPropsFile.exists()) {
+        localProps.load(new FileInputStream(localPropsFile))
+    }
+    def sdkDir = localProps.getProperty('sdk.dir') ?: System.getenv('ANDROID_HOME')
+
+    source = android.sourceSets.main.java.srcDirs
+    classpath += files("${sdkDir}/platforms/android-${android.compileSdk}/android.jar")
+    classpath += configurations.getByName('debugCompileClasspath')
+    destinationDir = file("${rootDir}/javadoc")
+    options.addStringOption('Xdoclint:none', '-quiet')
+}
+
 // Rename app - Fixed for AGP 9.x using androidComponents
 androidComponents {
     onVariants(selector().all(), { variant ->
