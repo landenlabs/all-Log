@@ -6,7 +6,7 @@ Android ALog - Enhanced Log Wrapper
 API 28, Android, Java
 
 
-***apk v1.58  Available in dist directgory to demonstrate and test ALog ***
+***apk v1.58  Available in dist directory to demonstrate and test ALog ***
 
   [![Build status](https://travis-ci.org/landenlabs/all_Log.svg?branch=master)](https://travis-ci.org/landenlabs/all_Log)
 
@@ -20,7 +20,7 @@ ALog is an Android Log wrapper which has the following features:
 
 >   1. Small \- Four small classes.
 
->   2. Light weight \- No explict memory allocations. 
+>   2. Light weight \- No explicit memory allocations. 
 
 >   3. Performant \- No processing beyond if-test when logging disabled or 
 log level below min level.  Message presentation (formatting or concatenation) 
@@ -31,22 +31,22 @@ only occur if logging is required.
 >   5. ThreadSafe \- Logs can be generated in concurrent threads.
 
 <a name="table"></a>
-#Table of Contents
-1. [Overview] (#overview)
-2. [Code change] (#change)
-3. [ALog] (#alog)
-4. [AppLog] (#applog)
-5. [Install] (#install)
-6. [Build] (#build)
-7. [Use] (#use)
-8. [License] (#license)
-9. [Websites] (#website)
+**Table of Contents**
+1. [Overview](#overview)
+2. [Code change](#change)
+3. [ALog](#alog)
+4. [AppLog](#applog)
+5. [Install](#install)
+6. [Build](#build)
+7. [Use](#use)
+8. [License](#license)
+9. [Websites](#website)
 
 ***
 <a name="overview"></a>
 **Overview** 
 
-The core class ALog is an enumeration. Using an enueration restricts memory allocation
+The core class ALog is an enumeration. Using an enumeration restricts memory allocation
 of the class to startup and subsequent use is light-weight singleton.
 
 Core class or enum files:
@@ -247,10 +247,10 @@ Using following syntax to log an exception (which includes stack trace):
 **AppLog** 
 
 
-This implementation futher extends the logging by wrapping ALog in another 
+This implementation further extends the logging by wrapping ALog in another 
 enumeration called <b>AppLog</b>.  The AppLog enumeration is used to create and manage named loggers
 which can be used by common code or actions such as Network access, Parsing XML, Fragments, etc.
-The AppLog enumeration futher extends the logging flavors by supporting alternate
+The AppLog enumeration further extends the logging flavors by supporting alternate
 logging destinations, such as a private log file or No Logging. By configuring these named
 loggers you can control which features in your code are actively logging and where they log.
 
@@ -280,7 +280,7 @@ public enum AppLog {
     LOG_NETWORK(LogNone),
 
     /**
-     * General Parinsg activity (currently disabled).
+     * General Parsing activity (currently disabled).
      */
     LOG_PARSING(LogNone),
 
@@ -304,10 +304,10 @@ AppLog.LOGFILE.e().tag("LogFile").msg("LogFile fixed Test");
 
 Since ALog is just an enumeration plus support files you just need to include these files in your project. 
 
-To use the full implemenation copy all four files from the alog subdirectory into your project and tune
+To use the full implementation copy all four files from the alog subdirectory into your project and tune
 the AppLog enumeration to your needs. 
 
-The private log fie target <b>ALogFileWriter</b> requires initialization to create the file. Call
+The private log file target <b>ALogFileWriter</b> requires initialization to create the file. Call
 init(Context) on this class in your startup code.
 
 ```java
@@ -348,32 +348,23 @@ See above API samples, JavaDoc, Code and Demo app for examples of usage.
 
 ***
 <a name="license"></a>
-**License** 
+### License
 
-```java
-/*
- *  Copyright (c) 2019 Dennis Lang (LanDen Labs) landenlabs@gmail.com
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
- *  associated documentation files (the "Software"), to deal in the Software without restriction, including
- *  without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the
- *  following conditions:
- *
- *  The above copyright notice and this permission notice shall be included in all copies or substantial
- *  portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
- *  LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
- *  NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- *  WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- *  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
- *  @author Dennis Lang  (Jan-2017)
- *  @see https://landenlabs.com
- *
- */
 ```
+Copyright 2026 Dennis Lang (LanDen Labs)
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+```
+See [LICENSE](LICENSE) for the full license text.
 
 [To Top](#table)
 

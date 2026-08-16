@@ -269,63 +269,43 @@ public class MainActivity extends Activity
     @Override
     public void onClick(View view) {
         int id = view.getId();
-        switch (id) {
-            case R.id.do_log_btn:
-                mLogCatSv.setVisibility(View.VISIBLE);
-                sendAndShowLog();
-                break;
-
-            case R.id.clear_btn:
-                mLogCatTv.setText("");
-                break;
-
-            case R.id.show_status_btn:
-                mLogCatSv.setVisibility(mLogCatSv.getVisibility() == View.GONE ? View.VISIBLE : View.GONE);
-                break;
-
-            case R.id.tag_selfRb:
-                mTagSelfRb.setChecked(true);
-                mTagTextRb.setChecked(false);
-                mTagNoneRb.setChecked(false);
-                break;
-            case R.id.tag_textRb:
-                mTagTextRb.setChecked(true);
-                mTagSelfRb.setChecked(false);
-                mTagNoneRb.setChecked(false);
-                break;
-            case R.id.tag_noneRb:
-                mTagNoneRb.setChecked(true);
-                mTagTextRb.setChecked(false);
-                mTagSelfRb.setChecked(false);
-                break;
-
-            case R.id.logRb:
-                mAppLog = AppLog.LOG;
-                mFileLog = false;
-                break;
-            case R.id.logfileRb:
-                mAppLog = AppLog.LOGFILE;
-                mFileLog = true;
-                break;
-            case R.id.lognetworkRb:
-                mAppLog = AppLog.LOG_NETWORK;
-                break;
-
-            case R.id.msgRb:
-                mType = logMsg;
-                break;
-            case R.id.catRb:
-                mType = logCat;
-                break;
-            case R.id.joinRb:
-                mType = logJoin;
-                break;
-            case R.id.fmtRb:
-                mType = logFmt;
-                break;
-            case R.id.throwRb:
-                mType = logThrow;
-                break;
+        if (id == R.id.do_log_btn) {
+            mLogCatSv.setVisibility(View.VISIBLE);
+            sendAndShowLog();
+        } else if (id == R.id.clear_btn) {
+            mLogCatTv.setText("");
+        } else if (id == R.id.show_status_btn) {
+            mLogCatSv.setVisibility(mLogCatSv.getVisibility() == View.GONE ? View.VISIBLE : View.GONE);
+        } else if (id == R.id.tag_selfRb) {
+            mTagSelfRb.setChecked(true);
+            mTagTextRb.setChecked(false);
+            mTagNoneRb.setChecked(false);
+        } else if (id == R.id.tag_textRb) {
+            mTagTextRb.setChecked(true);
+            mTagSelfRb.setChecked(false);
+            mTagNoneRb.setChecked(false);
+        } else if (id == R.id.tag_noneRb) {
+            mTagNoneRb.setChecked(true);
+            mTagTextRb.setChecked(false);
+            mTagSelfRb.setChecked(false);
+        } else if (id == R.id.logRb) {
+            mAppLog = AppLog.LOG;
+            mFileLog = false;
+        } else if (id == R.id.logfileRb) {
+            mAppLog = AppLog.LOGFILE;
+            mFileLog = true;
+        } else if (id == R.id.lognetworkRb) {
+            mAppLog = AppLog.LOG_NETWORK;
+        } else if (id == R.id.msgRb) {
+            mType = logMsg;
+        } else if (id == R.id.catRb) {
+            mType = logCat;
+        } else if (id == R.id.joinRb) {
+            mType = logJoin;
+        } else if (id == R.id.fmtRb) {
+            mType = logFmt;
+        } else if (id == R.id.throwRb) {
+            mType = logThrow;
         }
     }
 
